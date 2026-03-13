@@ -1,0 +1,19 @@
+*.zip
+*.mp3
+
+# Ignore audio inputs and transcription outputs
+audio_inputs/
+transcriptions/
+
+# Ignore environment variables (where your secret token will live)
+.env
+
+# Ignore Python caches and virtual environments
+__pycache__/
+*.pyc
+*.pyo
+venv/
+.venv/
+env/
+.mypy_cache/
+.vscode
