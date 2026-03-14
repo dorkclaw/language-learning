@@ -1,3 +1,5 @@
 python-dotenv
 whisperx
 openai
+genanki
+anki

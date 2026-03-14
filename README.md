@@ -13,6 +13,14 @@ Most of the code here is vibe coded, and not meant to be used by anyone else. Bu
  - Ideally, I would like to add the other direction, and german translations (my native language).
  - So I take every word pair in the deck, and use an LLM to annotate it for quality and generate more accurate translations and example sentences. And reverse translation direction.
 
+## Costs
+
+I used deep seek reasoner for most tasks because of its cheap price.
+
+- Transcribing of language transfer course was free (local gpu)
+- Extracting vocabulary from the language transfer transcripts cost around 40 cents
+- Cleaning up the anki deck and adding german translations for the top 1000 words cost around 2 dollars
+
 ## transcriptions
 
 Download Language Transfer course from [here](https://downloads.languagetransfer.org/spanish/spanish.zip), and unzip the contents into `./data/lt`
@@ -24,3 +32,14 @@ Add huggingface token in `.env.example` and rename to `.env`
 `pip3 install -r requirements.txt`
 
 `python3 src/transcribe_folder.py`
+
+`python3 src/extract_vocab_from_transcripts.py`
+
+## Anki deck cleanup and enrichment
+
+TODO put link to anki deck
+I found some anki deck with the 1000 most common spanish words, but it wasn't the highes quality, and only contained spanish -> english translations. So I used an LLM to clean up the translations, add german translations, and add example sentences.
+
+`python3 src/extract_from_anki.py`
+
+`python3 src/calc_anki_json_stats.py`

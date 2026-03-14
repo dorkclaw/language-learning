@@ -5,6 +5,7 @@
 audio_inputs/
 transcriptions/
 vocab/
+anki/
 
 # Ignore environment variables (where your secret token will live)
 .env

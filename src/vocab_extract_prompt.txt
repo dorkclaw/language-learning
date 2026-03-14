@@ -30,7 +30,7 @@ You must format the base words and translations according to standard dictionary
 ### CEFR LANGUAGE LEVEL ASSESSMENT
 For each word, evaluate its complexity according to the CEFR scale (A1, A2, B1, B2, C1, C2):
 - `earliest_level`: The earliest language level where a student might be introduced to this word.
-- `mandatory_level`: The highest language level by which a student MUST fully know and use this word to be considered at that level.
+- `mandatory_level`: The highest language level by which a student MUST fully know and use this word to be considered proficient at that level.
 
 ### OUTPUT FORMAT
 You must output ONLY valid JSON. Do not include any conversational filler, markdown formatting (like ```json), or explanations before or after the JSON. 

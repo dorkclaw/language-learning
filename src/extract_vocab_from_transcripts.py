@@ -2,11 +2,12 @@ import os
 import glob
 import json
 import re
-from openai import OpenAI
-from dotenv import load_dotenv
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
 import time
 import random
+
+from llm import invoke_llm
 
 # ==========================================
 # CONFIGURATION
@@ -19,31 +20,7 @@ PROMPT_FILE = os.path.join(os.path.dirname(__file__), "vocab_extract_prompt.txt"
 MAX_CONCURRENT_CALLS = 100  # Adjust based on your system's capabilities and API rate limits
 
 # Load environment variables
-load_dotenv()
-API_KEY = os.getenv("DEEPSEEK_API_KEY")
 
-if not API_KEY:
-    raise ValueError("DEEPSEEK_API_KEY is missing! Please add it to your .env file.")
-
-# Initialize the DeepSeek Client using the OpenAI SDK
-client = OpenAI(
-    api_key=API_KEY,
-    base_url="https://api.deepseek.com" # This tells the SDK to talk to DeepSeek, not OpenAI
-)
-# ==========================================
-
-def extract_json_from_text(text):
-    """
-    Reasoning models (like DeepSeek-R1) sometimes ignore the 'no markdown' rule
-    and wrap their output in ```json ... ``` blocks. This helper function 
-    robustly finds and extracts the JSON array regardless of how it's formatted.
-    """
-    match = re.search(r'```(?:json)?\s*(\[\s*\{.*?\}\s*\])\s*```', text, re.DOTALL)
-    if match:
-        return match.group(1)
-    
-    # If no markdown block is found, strip whitespace and hope it's raw JSON
-    return text.strip()
 
 def process_single_transcript(filepath, extraction_rules):
     # wait a random amount
@@ -75,27 +52,10 @@ def process_single_transcript(filepath, extraction_rules):
     raw_output = ""
     try:
         # Call DeepSeek-R1 (deepseek-reasoner)
-        response = client.chat.completions.create(
-            model="deepseek-reasoner",
-            messages=[
-                {"role": "system", "content": "You are an expert linguistics AI and Spanish teacher. You output strict JSON arrays."},
-                {"role": "user", "content": user_message}
-            ],
-            response_format={
-                'type': 'json_object'
-            }
-            # Temperature is ignored by deepseek-reasoner (it enforces its own logical temperature)
-        )
-        
-        # The final JSON response
-        raw_output = response.choices[0].message.content
-        
-        # (Optional: If you want to see the model's internal "thoughts", you can access them via:)
-        reasoning_process = response.choices[0].message.reasoning_content
-        
-        # Clean and parse the text into an actual Python Dictionary
-        clean_json_str = extract_json_from_text(raw_output)
-        vocab_data = json.loads(clean_json_str)
+        vocab_data = invoke_llm([
+            {"role": "system", "content": "You are an expert linguistics AI and Spanish teacher. You output strict JSON arrays."},
+            {"role": "user", "content": user_message}
+        ])
         
         # Save the formatted JSON to the output folder
         with open(output_filepath, "w", encoding="utf-8") as out_f:
