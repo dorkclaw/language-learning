@@ -1,66 +1,31 @@
 import genanki
-import json
+import random
 import os
+import json
 
-# --- Configuration ---
+# Define Paths
 INPUT_FOLDER = os.path.join(os.path.dirname(__file__), "../anki/Refold ES1K/")
 OUTPUT_FOLDER = os.path.join(os.path.dirname(__file__), "../anki/Refold ES1K_deck/")
 
-# --- Define the Model strictly using your provided specs ---
-MODEL_ID = 1184655693
+# Ensure the output directory exists
+os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-Q_FMT = """<div class="flashcard">
-    <div class="front">
-        <p class="word">{{Word}}</p>
-        <p class="word-audio">{{word_audio}}</p>
-    </div>
-</div>"""
-
-A_FMT = """<div class="flashcard">
-    <div class="front">
-        <p class="word">{{Word}}</p>
-    </div>
-
-    <hr id="answer" />
-
-    <div class="back">
-        <div class="definition">{{Definition}}</div>
-
-        {{#Irregular Forms}}
-            <p class="irregular-forms">
-                <strong>Irregular Forms:</strong>
-                {{Irregular Forms}}
-            </p>
-        {{/Irregular Forms}}
-				
-        <p class="example-sentence">
-            "{{Example Sentence}}"
-
-            <div class="sentence-translation">
-                {{hint:Translation}}
-            </div>
-
-            <p class="example-sentence-audio">{{sentence_audio}}</p>
-        </p>
-    </div>
-</div>"""
-
-CSS = """.card {
+# 1. Custom CSS adapted from Refold ES1K with additions for dual languages
+CSS = """
+.card {
      font-family: sans-serif;
      font-size: 16px;
      text-align: left;
      color: rgb(48, 32, 111);
      background-color: rgb(251, 250, 254);
 }
-
 .card.nightMode {
      color: rgba(255, 255, 255, 0.85);
      background-color: rgb(11, 7, 22);
 }
-
 .flashcard {
      display: block;
-     padding: 0 24px 20px 24px;
+     padding: 24px;
      min-height: 200px;
      max-width: 500px;
      margin: 0 auto;
@@ -68,221 +33,169 @@ CSS = """.card {
      background-color: rgb(255, 255, 255);
      box-shadow: 0 5px 10px -5px rgba(133, 102, 255, 0.4);
 }
-
 .nightMode .flashcard {
      background-color: rgb(19, 12, 34);
      box-shadow: 0 5px 10px -5px rgba(0, 0, 0, 0.75);
 }
-
-.front {
-     display: flex;
-     justify-content: space-between;
-     align-items: center;
-     margin-bottom: -10px;
-     font-family: "Montserrat", sans-serif;
-}
-
-.back {
-     font-family: "Open Sans", sans-serif;
-}
-
 .word {
      color: rgb(75, 50, 174);
-     font-size: 32px;
+     font-size: 28px;
      font-weight: 700;
+     margin-bottom: 16px;
+     line-height: 1.3;
 }
-
 .nightMode .word {
-     color:rgb(133, 102, 255);
+     color: rgb(133, 102, 255);
 }
-
 .definition {
-     font-size: 24px;
-     margin-bottom: 0;
+     font-size: 22px;
+     margin-bottom: 16px;
+     line-height: 1.3;
 }
-
-.irregular-forms {
-     color: rgb(75, 50, 174);
-     margin-top: 12px;
-}
-
-.nightMode .irregular-forms {
-     color: rgb(153, 128, 255);
-}
-
 .example-sentence {
-     margin-top: 34px 
+     margin-top: 16px;
+     font-style: italic;
+     line-height: 1.4;
 }
-
 .sentence-translation {
-		 font-style: italic;
+     margin-top: 12px;
+     font-size: 16px;
+     line-height: 1.4;
 }
-
 hr {
      border: 0;
      border-bottom: 1px solid rgb(216, 208, 249);
-     margin-bottom: 32px;
+     margin: 24px 0;
 }
-
 .nightMode hr {
      border-color: rgb(48, 32, 111);
 }
-
-.replay-button svg circle { 
-     fill: rgb(246, 245, 253);
-     stroke: rgb(216, 208, 249);
-     stroke-width: 1;
-}
-
-.replay-button svg path { 
-     fill: rgb(75, 50, 174);
-     transform: scale(0.6) translate(19px, 20px);
-}
-
-.nightMode .replay-button svg circle { 
-     fill: rgb(26, 18, 61);
-     stroke: rgb(48, 32, 111);
-}
-
-.nightMode .replay-button svg path { 
-     fill: rgb(255, 255, 255); 
-}
-
-.hint {
+.lang-label {
      color: rgb(101, 68, 233);
+     font-size: 0.75em;
+     font-weight: bold;
+     text-transform: uppercase;
+     margin-right: 4px;
 }
+.nightMode .lang-label {
+     color: rgb(153, 128, 255);
+}
+"""
 
-.nightMode .hint {
-     color: rgb(133, 102, 255);
-}"""
-
-es1k_model = genanki.Model(
+# 2. Define the Universal Model for our dual-direction setup
+MODEL_ID = random.Random("Symmetrical_ES_EN_DE_Vocab").randrange(1<<30, 1<<31) # Reusing a stable base ID
+unified_model = genanki.Model(
     MODEL_ID,
-    'ES1Kv2',
+    'Symmetrical_ES_EN_DE_Vocab',
     fields=[
-        {'name': 'Index'},
-        {'name': 'Word'},
-        {'name': 'Definition'},
-        {'name': 'Irregular Forms'},
-        {'name': 'Example Sentence'},
-        {'name': 'Translation'},
-        {'name': 'word_audio'},
-        {'name': 'sentence_audio'}
+        {'name': 'Front_Word'},
+        {'name': 'Front_Sentence'},
+        {'name': 'Back_Word'},
+        {'name': 'Back_Sentence'},
     ],
     templates=[{
-        'name': 'ES1K Vocab',
-        'qfmt': Q_FMT,
-        'afmt': A_FMT,
+        'name': 'Vocabulary Card',
+        'qfmt': """
+        <div class="flashcard">
+            <div class="word">{{Front_Word}}</div>
+            <div class="example-sentence">{{Front_Sentence}}</div>
+        </div>
+        """,
+        'afmt': """
+        <div class="flashcard">
+            <div class="word">{{Front_Word}}</div>
+            <div class="example-sentence">{{Front_Sentence}}</div>
+            
+            <hr id="answer" />
+            
+            <div class="definition">{{Back_Word}}</div>
+            <div class="sentence-translation">{{Back_Sentence}}</div>
+        </div>
+        """,
     }],
-    css=CSS,
-    model_type=0
+    css=CSS
 )
 
-def build_decks():
-    # Ensure folders exist
+# Dictionary to hold the dynamic decks
+decks_by_level = {}
+
+def get_deck_for_level(level):
+    """Creates or fetches a deck for a specific language level."""
+    if level not in decks_by_level:
+        # Seed the random generator with the level name to ensure stable deck IDs across runs
+        deck_id = random.Random(f"Deck_Seed_{level}").randrange(1<<30, 1<<31)
+        deck_name = f"Spanish Symmetrical - Level {level}"
+        decks_by_level[level] = genanki.Deck(deck_id, deck_name)
+    return decks_by_level[level]
+
+def format_list(item_list):
+    """Helper to join lists of words cleanly."""
+    return ", ".join(item_list) if isinstance(item_list, list) else str(item_list)
+
+def process_json_files():
     if not os.path.exists(INPUT_FOLDER):
-        print(f"Error: Could not find input folder at {INPUT_FOLDER}")
+        print(f"Error: Input folder {INPUT_FOLDER} not found.")
         return
-    
-    os.makedirs(OUTPUT_FOLDER, exist_ok=True)
 
-    # Dictionary to hold the deck for each CEFR level
-    decks_by_level = {}
-    
-    # Base Deck ID from your instructions
-    BASE_DECK_ID = 2048342517
-
-    print("Reading JSON files and generating cards...")
-    
     for filename in os.listdir(INPUT_FOLDER):
-        if not filename.endswith('.json'):
+        if not filename.endswith(".json"):
             continue
             
         filepath = os.path.join(INPUT_FOLDER, filename)
         
         try:
-            with open(filepath, 'r', encoding='utf-8') as f:
-                cards_data = json.load(f)
+            with open(filepath, "r", encoding="utf-8") as f:
+                data = json.load(f)
                 
-                # Our schema is an array with exactly two dicts (one for each direction)
-                if not isinstance(cards_data, list):
-                    continue
-
-                for card in cards_data:
-                    level = card.get("mandatory_level")
-                    if not level:
-                        continue
+            # Iterate through the two objects in the array
+            for index, card in enumerate(data):
+                direction = card.get("direction")
+                level = card.get("mandatory_level", "Uncategorized")
+                
+                # Assign to corresponding deck
+                deck = get_deck_for_level(level)
+                
+                # Determine fields based on direction
+                if direction == "spanish_to_target":
+                    front_word = card.get("cue_spanish", "")
+                    front_sentence = f"\"{card.get('example_sentence_es', '')}\""
                     
-                    # Initialize the deck for this level if it doesn't exist yet
-                    if level not in decks_by_level:
-                        # Generate a deterministic unique ID based on the Base ID + level hash
-                        unique_deck_id = BASE_DECK_ID + abs(hash(level)) % 1000000 
-                        deck_name = f"Refold ES1K modified::{level}" # using :: creates subdecks in Anki cleanly
-                        decks_by_level[level] = genanki.Deck(unique_deck_id, deck_name)
-
-                    direction = card.get("direction")
+                    back_word = (f"<span class='lang-label'>EN:</span> {format_list(card.get('target_en',[]))}<br>"
+                                 f"<span class='lang-label'>DE:</span> {format_list(card.get('target_de',[]))}")
+                    back_sentence = (f"<span class='lang-label'>EN:</span> {card.get('example_sentence_en', '')}<br>"
+                                     f"<span class='lang-label'>DE:</span> {card.get('example_sentence_de', '')}")
+                
+                elif direction == "target_to_spanish":
+                    front_word = (f"<span class='lang-label'>EN:</span> {card.get('cue_en', '')}<br>"
+                                  f"<span class='lang-label'>DE:</span> {card.get('cue_de', '')}")
+                    front_sentence = (f"<span class='lang-label'>EN:</span> \"{card.get('example_sentence_en', '')}\"<br>"
+                                      f"<span class='lang-label'>DE:</span> \"{card.get('example_sentence_de', '')}\"")
                     
-                    # Prepare the data mapped perfectly to your Anki Model
-                    index = ""
-                    irregular_forms = ""
-                    word_audio = ""
-                    sentence_audio = ""
-
-                    if direction == "spanish_to_target":
-                        word = card.get("cue_spanish", "")
-                        
-                        # Combine EN and DE definitions
-                        target_en = ", ".join(card.get("target_en",[]))
-                        target_de = ", ".join(card.get("target_de",[]))
-                        definition = f"<strong>EN:</strong> {target_en}<br><strong>DE:</strong> {target_de}"
-                        
-                        example_sentence = card.get("example_sentence_es", "")
-                        
-                        # Combine EN and DE sentence translations
-                        sentence_en = card.get("example_sentence_en", "")
-                        sentence_de = card.get("example_sentence_de", "")
-                        translation = f"<strong>EN:</strong> {sentence_en}<br><br><strong>DE:</strong> {sentence_de}"
-
-                    elif direction == "target_to_spanish":
-                        # Combine EN and DE as the cue word
-                        word = f"{card.get('cue_en', '')} <br><span style='font-size:22px; color:gray;'>({card.get('cue_de', '')})</span>"
-                        
-                        definition = f"<strong>ES:</strong> {', '.join(card.get('target_es',[]))}"
-                        
-                        # Put EN and DE sentence on the front as "Example Sentence" placeholder
-                        example_sentence = f"<strong>EN:</strong> {card.get('example_sentence_en', '')}<br><br><strong>DE:</strong> {card.get('example_sentence_de', '')}"
-                        
-                        # The translation is the target Spanish
-                        translation = f"<strong>ES:</strong> {card.get('example_sentence_es', '')}"
-                    else:
-                        continue # Skip unrecognized structure
-
-                    # Create Note
-                    note = genanki.Note(
-                        model=es1k_model,
-                        fields=[
-                            index, 
-                            word, 
-                            definition, 
-                            irregular_forms, 
-                            example_sentence, 
-                            translation, 
-                            word_audio, 
-                            sentence_audio
-                        ]
-                    )
-                    
-                    # Add Note to respective Deck
-                    decks_by_level[level].add_note(note)
-
+                    back_word = f"<span class='lang-label'>ES:</span> {format_list(card.get('target_es',[]))}"
+                    back_sentence = f"<span class='lang-label'>ES:</span> {card.get('example_sentence_es', '')}"
+                else:
+                    continue # Skip if unrecognized format
+                
+                # Generate a stable GUID from the filename and the card index
+                note_guid = genanki.guid_for(filename, str(index))
+                
+                note = genanki.Note(
+                    model=unified_model,
+                    fields=[front_word, front_sentence, back_word, back_sentence],
+                    guid=note_guid
+                )
+                
+                deck.add_note(note)
+                
         except Exception as e:
-            print(f"Failed to process {filename}: {e}")
+            print(f"Error processing {filename}: {e}")
 
-    # Export decks to .apkg files
+    # 4. Export the decks
+    print("\n--- Generating Anki Packages ---")
     for level, deck in decks_by_level.items():
-        output_path = os.path.join(OUTPUT_FOLDER, f"Refold_ES1K_{level}.apkg")
-        genanki.Package(deck).write_to_file(output_path)
-        print(f"Success! Created: Refold_ES1K_{level}.apkg with {len(deck.notes)} cards.")
+        output_file = os.path.join(OUTPUT_FOLDER, f"Spanish_Symmetrical_{level}.apkg")
+        genanki.Package(deck).write_to_file(output_file)
+        print(f"Successfully created: {output_file} (Notes: {len(deck.notes)})")
 
 if __name__ == "__main__":
-    build_decks()
+    process_json_files()
