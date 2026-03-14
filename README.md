@@ -43,3 +43,5 @@ I found some anki deck with the 1000 most common spanish words, but it wasn't th
 `python3 src/extract_from_anki.py`
 
 `python3 src/calc_anki_json_stats.py`
+
+`python3 src/make_anki_deck.py`

@@ -2,7 +2,8 @@ import json
 import os
 from collections import Counter
 
-INPUT = os.path.join(os.path.dirname(__file__), "../anki/Refold ES1K/")
+#INPUT = os.path.join(os.path.dirname(__file__), "../anki/Refold ES1K/")
+INPUT = os.path.join(os.path.dirname(__file__), "../vocab/lt")
 
 def calculate_level_statistics(directory_path):
     # Initialize counters for the levels
@@ -40,8 +41,8 @@ def calculate_level_statistics(directory_path):
                                 earliest_counts[earliest] += 1
                             if mandatory:
                                 mandatory_counts[mandatory] += 1
-                                if mandatory == "B2":
-                                    print(json.dumps(card, indent=2, ensure_ascii=False))
+                                #if mandatory == "C1":
+                                #    print(json.dumps(card, indent=2, ensure_ascii=False))
                     else:
                         print(f"Warning: {filename} does not contain a JSON array.")
                         
