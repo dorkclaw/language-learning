@@ -45,3 +45,55 @@ I found some anki deck with the 1000 most common spanish words, but it wasn't th
 `python3 src/calc_anki_json_stats.py`
 
 `python3 src/make_anki_deck.py`
+## 🗞️ BBC Noticias Bot
+
+A daily Spanish language learning bot: fetches BBC Mundo RSS → selects the most relevant story via AI → simplifies the article for B1 learners (with English word translations) → sends it to Discord or Telegram.
+
+### Setup
+
+1. Copy `.env.example` to `.env` and fill in your keys:
+   ```bash
+   cp .env.example .env
+   ```
+
+2. Get an OpenRouter key at [openrouter.ai/keys](https://openrouter.ai/keys)
+
+3. For Discord: add a webhook to your channel (Channel Settings → Integrations → Webhooks)
+
+4. For Telegram: create a bot via [@BotFather](https://t.me/BotFather) and get your chat ID
+
+### Run
+
+**One-shot (manual):**
+```bash
+python -m src.bbc_noticias.bot
+```
+
+**Dry run (no messages sent):**
+```bash
+DRY_RUN=true python -m src.bbc_noticias.bot
+```
+
+**Scheduled (Docker):**
+```bash
+docker compose up -d
+```
+
+The container runs daily by default. Configure `SCHEDULE_HOURS` to change the interval.
+
+**Scheduled (without Docker):**
+```bash
+python -m src.bbc_noticias.bot --loop --interval 24
+```
+
+### Configuration
+
+| Variable | Required | Default | Description |
+|---|---|---|---|
+| `OPENROUTER_API_KEY` | ✅ | — | OpenRouter API key |
+| `OPENROUTER_MODEL` | | `openrouter/auto` | Model to use |
+| `DISCORD_WEBHOOK_URL` | One of | — | Discord webhook URL |
+| `TELEGRAM_BOT_TOKEN` | One of | — | Telegram bot token |
+| `TELEGRAM_CHAT_ID` | | — | Telegram chat ID |
+| `MAX_AGE_HOURS` | | `24` | How far back to search RSS |
+| `DRY_RUN` | | `false` | Skip sending messages |

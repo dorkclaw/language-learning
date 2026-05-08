@@ -1,0 +1,17 @@
+version: "3.8"
+
+services:
+  bbc-noticias:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: bbc-noticias
+    restart: unless-stopped
+    env_file:
+      - .env
+    environment:
+      - SCHEDULE_HOURS=${SCHEDULE_HOURS:-24}
+      - DRY_RUN=${DRY_RUN:-false}
+    volumes:
+      # Persist state (seen articles, logs, etc.) across restarts
+      - ./data:/app/data
