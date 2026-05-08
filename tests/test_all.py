@@ -43,10 +43,37 @@ def _make_response(xml_bytes: bytes, status_code: int = 200) -> MagicMock:
     return resp
 
 
-def _patch_get(xml_bytes: bytes, status_code: int = 200):
-    """Patch requests.get so it returns a response with the given XML bytes."""
-    mock_resp = _make_response(xml_bytes, status_code)
-    return patch('bbc_noticias.rss.requests.get', return_value=mock_resp)
+def _make_mock_get_call(xml_bytes: bytes, status_code: int = 200, title: str = "Test Story", link: str = "https://bbc.com/test"):
+    """Create a mock requests.get that returns our test XML for each of the 4 RSS feeds.
+
+    Uses a call-counting side_effect so each feed gets the same test story
+    (they all merge into 4 identical items in the result, which is expected
+    when you only override a single feed's response).
+    """
+    from contextlib import contextmanager
+
+    call_responses = [
+        _make_response(xml_bytes, status_code),
+    ]
+    call_count = [0]
+
+    def get_side_effect(*args, **kwargs):
+        resp = call_responses[0]
+        call_count[0] += 1
+        return resp
+
+    import bbc_noticias.rss as rss_mod
+    original_get = rss_mod.requests.get
+    rss_mod.requests.get = get_side_effect
+
+    @contextmanager
+    def _ctx():
+        try:
+            yield
+        finally:
+            rss_mod.requests.get = original_get
+
+    return _ctx()
 
 
 # ---------------------------------------------------------------------------
@@ -92,14 +119,16 @@ class TestFetchStories(TestCase):
         ).encode('utf-8')
 
     def test_parses_single_story(self):
+        """All 4 feeds return the same test item → 4 merged stories."""
         xml = self._rss_xml('Mi primera historia', 'https://bbc.com/123')
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
-        self.assertEqual(len(stories), 1)
+        self.assertEqual(len(stories), 4)  # one per feed
         self.assertEqual(stories[0]['title'], 'Mi primera historia')
         self.assertEqual(stories[0]['link'], 'https://bbc.com/123')
 
     def test_parses_multiple_stories(self):
+        """Each feed has 2 items → 8 merged stories total."""
         xml = (
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<rss version="2.0"><channel><title>BBC</title>'
@@ -107,61 +136,67 @@ class TestFetchStories(TestCase):
             b'<item><title>Story B</title><link>https://b.com</link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
             b'</channel></rss>'
         )
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
-        self.assertEqual(len(stories), 2)
+        self.assertEqual(len(stories), 8)  # 2 per feed × 4 feeds
         self.assertEqual(stories[0]['title'], 'Story A')
         self.assertEqual(stories[1]['title'], 'Story B')
 
     def test_filters_stories_older_than_max_age_hours(self):
+        """Old story is filtered out from all feeds → 0 stories."""
         old_date = (datetime.now(timezone.utc) - timedelta(hours=30)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         xml = self._rss_xml('Historia vieja', 'https://bbc.com/vieja', old_date)
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
         self.assertEqual(len(stories), 0)
 
     def test_includes_stories_within_max_age_hours(self):
+        """Recent story is kept in all feeds → 4 stories (one per feed)."""
         recent_date = (datetime.now(timezone.utc) - timedelta(hours=12)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         xml = self._rss_xml('Historia reciente', 'https://bbc.com/reciente', recent_date)
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
-        self.assertEqual(len(stories), 1)
+        self.assertEqual(len(stories), 4)
 
     def test_skips_items_without_title(self):
+        """Items with empty titles are skipped → 0 stories."""
         xml = (
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<rss version="2.0"><channel><title>T</title>'
             b'<item><title></title><link>https://x.com</link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
             b'</channel></rss>'
         )
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
         self.assertEqual(len(stories), 0)
 
     def test_skips_items_without_link(self):
+        """Items with empty links are skipped → 0 stories."""
         xml = (
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<rss version="2.0"><channel><title>T</title>'
             b'<item><title>Has title</title><link></link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
             b'</channel></rss>'
         )
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
         self.assertEqual(len(stories), 0)
 
     def test_returns_empty_on_invalid_xml(self):
-        with _patch_get(b'not xml at all'):
+        """Invalid XML → empty story list."""
+        with _make_mock_get_call(b'not xml at all'):
             stories = fetch_stories(max_age_hours=24)
         self.assertEqual(len(stories), 0)
 
     def test_uses_source_from_channel_title(self):
+        """Source label comes from channel/title element."""
         xml = (
             b'<?xml version="1.0" encoding="UTF-8"?>'
             b'<rss version="2.0"><channel><title>BBC Mundo Portada</title>'
             b'<item><title>S</title><link>https://x.com</link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
             b'</channel></rss>'
         )
-        with _patch_get(xml):
+        with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
         self.assertEqual(stories[0]['source'], 'BBC Mundo Portada')
 
