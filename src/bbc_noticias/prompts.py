@@ -39,6 +39,7 @@ Below is a Spanish news article. Your task has three parts:
    - Run-on sentences where a period was missed
    - Boilerplate text that leaked in (e.g. video captions, bylines, read-time labels)
    Clean these up silently — correct the text as you go.
+   Use ## <title> for title sections.
 
 2. SIMPLIFY: Rewrites sentences that are too complex, too formal, or use difficult grammatical structures.
    Make them easier to understand while keeping the original meaning and key information.
@@ -48,6 +49,7 @@ Below is a Spanish news article. Your task has three parts:
    - A complex or uncommon Spanish word, OR
    - Uses advanced vocabulary beyond B1 level
    Add the English translation in parentheses immediately after the word.
+Examples of difficult words: los aliados, ofrecer, conocida, fronterizo, apoyo, aparcamiento, señalar, además.
 
 Rules:
 - Do NOT add explanations or notes outside the text

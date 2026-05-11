@@ -9,6 +9,7 @@ Telegram:
   TELEGRAM_BOT_TOKEN   — bot token from @BotFather
   TELEGRAM_CHAT_ID     — numeric chat ID (channel, group, or DM)
 """
+
 import os
 import requests
 from typing import Optional
@@ -36,7 +37,7 @@ def _discord_post(content: str) -> bool:
         all_ok = True
         for i in range(0, len(content), 1990):
             chunk = content[i : i + 1990]
-            data = {"content": f"```\n{chunk}\n```"}
+            data = {"content": f"{chunk}"}
             try:
                 resp = requests.post(url, json=data, timeout=10)
                 if resp.status_code not in (200, 204):
@@ -98,16 +99,17 @@ def send_article(
     if pub_date:
         header += f"_Publicado: {pub_date[:10]}_\n"
     header += f"🔗 {original_url}\n\n"
-    footer = "\n\n_¿Te gusta este formato? Reacciona con ✅ o dime qué cambiar._"
 
-    content = f"{header}{simplified_text}{footer}"
+    content = f"{header}{simplified_text}"
 
     discord_ok = _discord_post(content)
     telegram_ok = _telegram_post(content)
 
     # Try plain text for Telegram if Markdown fails
-    if not telegram_ok and content != f"{header}{simplified_text}{footer}".replace("*", "").replace("_", ""):
-        plain = f"{header}{simplified_text}{footer}".replace("*", "").replace("_", "")
+    if not telegram_ok and content != f"{header}{simplified_text}".replace(
+        "*", ""
+    ).replace("_", ""):
+        plain = f"{header}{simplified_text}".replace("*", "").replace("_", "")
         telegram_ok = _telegram_post(plain, parse_mode=None)
 
     return {"discord": discord_ok, "telegram": telegram_ok}

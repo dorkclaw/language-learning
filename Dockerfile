@@ -18,7 +18,6 @@ RUN uv sync --frozen --no-dev
 
 # Copy application code
 COPY src/ ./src/
-COPY bot.py ./
 
 # Default: run once per day
 ENV SCHEDULE_HOURS=24

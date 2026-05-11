@@ -6,6 +6,7 @@ BBC Mundo offers these RSS feeds:
   - Internacional:  https://www.bbc.co.uk/mundo/temas/internacional/index.xml
   - América Latina:  https://www.bbc.co.uk/mundo/temas/america_latina/index.xml
 """
+
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from typing import Optional
@@ -15,7 +16,7 @@ FEEDS = [
     "https://www.bbc.co.uk/mundo/index.xml",
     "https://www.bbc.co.uk/mundo/ultimas_noticias/index.xml",
     "https://www.bbc.co.uk/mundo/temas/internacional/index.xml",
-    "https://www.bbc.co.uk/mundo/temas/america_latina/index.xml",
+    # "https://www.bbc.co.uk/mundo/temas/america_latina/index.xml",
 ]
 
 
@@ -26,6 +27,7 @@ def parse_rss_datetime(date_str: str) -> Optional[datetime]:
     # RSS dates are RFC 822 / RFC 2822 — parsedate_to_datetime handles them directly
     try:
         from email.utils import parsedate_to_datetime
+
         return parsedate_to_datetime(date_str.strip())
     except Exception:
         return None
@@ -66,19 +68,22 @@ def fetch_stories(max_age_hours: int = 24) -> list[dict]:
 
                 pub_date = parse_rss_datetime(pub_date_str)
                 if pub_date is None:
+                    print("Pub date could not be parsed:", pub_date_str)
                     continue
 
                 # Filter by age
                 if pub_date.timestamp() < cutoff_timestamp:
                     continue
 
-                all_stories.append({
-                    "title": title,
-                    "link": link,
-                    "description": description,
-                    "pub_date": pub_date.isoformat(),
-                    "source": source,
-                })
+                all_stories.append(
+                    {
+                        "title": title,
+                        "link": link,
+                        "description": description,
+                        "pub_date": pub_date.isoformat(),
+                        "source": source,
+                    }
+                )
 
         except Exception as e:
             print(f"[rss] Failed to fetch {feed_url}: {e}")

@@ -2,6 +2,7 @@
 Story selector — asks OpenRouter which of today's BBC Mundo stories
 is most relevant for Dorian.
 """
+
 from .llm import LLM
 from .prompts import STORY_SELECTION_PROMPT, DORIAN_PROFILE
 
@@ -24,7 +25,11 @@ def select_best_story(stories: list[dict], llm: LLM) -> dict | None:
 
     story_list = "\n\n".join(story_lines)
 
-    prompt = STORY_SELECTION_PROMPT.format(profile=DORIAN_PROFILE, story_list=story_list)
+    print(story_list)
+
+    prompt = STORY_SELECTION_PROMPT.format(
+        profile=DORIAN_PROFILE, story_list=story_list
+    )
     selected_title = llm.complete(
         system="You are a helpful news curation assistant.",
         user=prompt,
@@ -40,5 +45,7 @@ def select_best_story(stories: list[dict], llm: LLM) -> dict | None:
             return s
 
     # Fallback: return first
-    print(f"[selector] Could not match title '{selected_title}', falling back to first story.")
+    print(
+        f"[selector] Could not match title '{selected_title}', falling back to first story."
+    )
     return stories[0]
