@@ -82,9 +82,22 @@ def _fallback_extract(html: str) -> Optional[str]:
 
 def _clean_html(html: str) -> str:
     """Remove HTML tags and normalize whitespace from article body."""
-    # Remove script, style, nav, footer, aside
+    # Remove script, style, nav, footer, aside, form
     html = re.sub(r'<(script|style|nav|footer|aside|form)[^>]*>.*?</\1>',
                   '', html, flags=re.DOTALL | re.IGNORECASE)
+
+    # Remove sidebar/chrome sections: "Más leídas", "Podcast", related links
+    html = re.sub(r'<!--.*?-->', '', html, flags=re.DOTALL)  # HTML comments
+    html = re.sub(r'<aside[^>]*>.*?</aside>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    html = re.sub(r'<div[^>]*class="[^"]*(?:sidebar|related|mas-leidas|más-leídas|recommended)[^"]*"[^>]*>.*?</div>',
+                  '', html, flags=re.DOTALL | re.IGNORECASE)
+
+    # Remove "Saltar X y continuar leyendo" nav markers
+    html = re.sub(r'Saltar\s+\w+[\s\w]*y continuar leyendo', '', html, flags=re.IGNORECASE)
+
+    # Remove video / audio player placeholders
+    html = re.sub(r'Para ver este contenido[^\n<]*', '', html, flags=re.IGNORECASE)
+
     # Replace block elements with newlines
     html = re.sub(r'<(p|div|br|h[1-6]|li|blockquote)[^>]*>', '\n', html, flags=re.IGNORECASE)
     # Strip remaining tags
@@ -99,8 +112,70 @@ def _clean_html(html: str) -> str:
         html = html.replace(entity, char)
     # Normalize whitespace: collapse multiple spaces, strip line ends
     html = re.sub(r' {2,}', ' ', html)
+
+    # Post-clean: remove common noise lines
     lines = [ln.strip() for ln in html.splitlines()]
-    return '\n'.join(ln for ln in lines if ln)
+    # Filter out BBC UI noise, photo credits, newsletter CTAs, sidebar blocks, empty lines
+    skip_phrases = (
+        'Fuente de la imagen',
+        'Pie de foto',
+        'Suscríbete aquí',
+        'También puedes seguirnos',
+        'Y recuerda que puedes recibir',
+        'Haz clic aquí',
+        'Más leídas',
+        'Final de Más leídas',
+        'Información del artículo',
+        'Episodios',
+        'Para ver este contenido',
+        'Play video',
+        'Título del video',
+        'Duración',
+        'Tiempo de lectura',
+        'Actualizado',
+    )
+    skip_starts = (
+        'Autor,',
+        'Título del autor,',
+        'https://www.bbc.com/mundo/',
+    )
+    filtered = []
+    in_mas_leidas = False
+    in_podcast = False
+    for ln in lines:
+        txt = ln.strip()
+        # Skip "Más leídas" block (starts with headline, ends with "Final de Más leídas")
+        if 'Más leídas' in txt and 'Final de Más leídas' not in txt:
+            in_mas_leidas = True
+            continue
+        if in_mas_leidas:
+            if 'Final de Más leídas' in txt:
+                in_mas_leidas = False
+            continue
+        # Skip podcast block
+        if 'El nuevo podcast de BBC Mundo' in txt:
+            in_podcast = True
+            continue
+        if in_podcast:
+            if 'Fin de Podcast' in txt:
+                in_podcast = False
+            continue
+        # Skip by phrase
+        if any(p in txt for p in skip_phrases):
+            continue
+        # Skip by prefix
+        if any(txt.startswith(p) for p in skip_starts):
+            continue
+        # Skip standalone date/readtime lines
+        if re.match(r'^\d{1,2}\s+\w+\s+\d{4}$', txt):
+            continue
+        # Skip standalone video/audio duration lines like "02:27"
+        if re.match(r'^\d{1,2}:\d{2}$', txt):
+            continue
+        if txt:
+            filtered.append(ln)
+
+    return '\n'.join(filtered)
 
 
 if __name__ == "__main__":
