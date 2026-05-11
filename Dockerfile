@@ -22,5 +22,6 @@ COPY src/ ./src/
 # Default: run once per day
 ENV SCHEDULE_HOURS=24
 ENV DRY_RUN=false
+ENV PYTHONUNBUFFERED=1
 
-CMD python -m src.bbc_noticias.bot --loop --interval "${SCHEDULE_HOURS:-24}"
+CMD ["uv", "run", "python", "-m", "src.bbc_noticias.bot", "--loop", "--interval", "24"]
