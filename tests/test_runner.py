@@ -4,16 +4,26 @@ Uses importlib to load modules with a mock requests pre-installed.
 Run with: python3 tests/test_runner.py
 """
 import sys
-import importlib
 from pathlib import Path
-from unittest.mock import MagicMock, patch
-from datetime import datetime, timezone, timedelta
+from unittest.mock import MagicMock
 
-# Pre-load a mock requests module so rss.py etc. can import it
+# Pre-load mock modules so rss.py etc. can import them without pip-installed deps
 mock_requests = MagicMock()
 mock_response = MagicMock()
+mock_response.status_code = 200
+mock_response.text = "<html></html>"
+mock_response.content = b"<html></html>"
+mock_response.raise_for_status = MagicMock()
+mock_requests.get.return_value = mock_response
+
+mock_exc = MagicMock()
+mock_exc.Timeout = OSError
+mock_exc.ConnectionError = OSError
+
 sys.modules["requests"] = mock_requests
-sys.modules["requests.exceptions"] = MagicMock()
+sys.modules["requests.exceptions"] = mock_exc
+sys.modules["dotenv"] = MagicMock()
+sys.modules["dotenv"].load_dotenv = lambda *a, **k: None
 
 # Now add src/ to path and import our modules
 sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
@@ -39,10 +49,10 @@ def test(name, fn, *args):
 def run():
     print("\n=== rss.py: parse_rss_datetime ===")
     ok = 0
-    ok += test("parses RFC822 GMT", parse_rss_datetime, "Fri, 08 May 2026 12:00:00 GMT") is not None
+    ok += int(test("parses RFC822 GMT", parse_rss_datetime, "Fri, 08 May 2026 12:00:00 GMT") is not None)
     r = parse_rss_datetime("Fri, 08 May 2026 12:00:00 GMT"); assert r is not None and r.year == 2026
-    ok += test("None input", lambda: parse_rss_datetime(None) is None)
-    ok += test("empty string", lambda: parse_rss_datetime("") is None)
+    ok += int(test("None input", lambda: parse_rss_datetime(None) is None))
+    ok += int(test("empty string", lambda: parse_rss_datetime("") is None))
 
     print("\n=== scraper.py: _clean_html ===")
     def clean(html): return _clean_html(html)
@@ -89,7 +99,10 @@ def run():
 
     print(f"\n{'='*40}")
     print(f"Results: {ok} passed")
-    print("✅ All tests passed" if ok == sum([1 for _ in [1]]) else f"❌ {sum([1 for _ in [1]]) - ok} failed")
+    # Total tests: parse_rss_datetime(3) + _clean_html(5) + _extract_article_body(4) +
+    # _fallback_extract(2) + Config defaults(4) + dry_run parsing(2) + validate(3) = 23
+    total_tests = 23
+    print("✅ All tests passed" if ok == total_tests else f"❌ {total_tests - ok} failed")
     return ok
 
 

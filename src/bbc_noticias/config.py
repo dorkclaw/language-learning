@@ -2,10 +2,18 @@
 User profile — tune the bot's behaviour via environment variables.
 """
 import os
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from dotenv import load_dotenv
 
 load_dotenv()
+
+
+def _parse_bool(value) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, str):
+        return value.lower() in ("true", "1", "yes")
+    return False
 
 
 @dataclass
@@ -27,7 +35,11 @@ class Config:
     max_stories_for_selection: int = int(os.getenv("MAX_STORIES_FOR_SELECTION", "15"))
 
     # Dry-run mode — skips sending to Discord/Telegram
-    dry_run: bool = os.getenv("DRY_RUN", "false").lower() in ("true", "1", "yes")
+    dry_run: bool = field(default_factory=lambda: _parse_bool(os.getenv("DRY_RUN", "false")))
+
+    def __post_init__(self):
+        # Ensure dry_run is always a proper bool, even when passed as a string
+        self.dry_run = _parse_bool(self.dry_run)
 
     def validate(self) -> list[str]:
         """Return list of missing/invalid config values for user to fix."""

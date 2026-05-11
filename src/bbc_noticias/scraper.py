@@ -34,6 +34,9 @@ def fetch_article(url: str, timeout: int = 15) -> Optional[str]:
             # Fallback: grab everything between two common article markers
             body = _fallback_extract(html)
 
+        if not body:
+            return None
+
         # Clean up: strip tags, normalize whitespace
         text = _clean_html(body)
         return text if text else None
@@ -94,7 +97,8 @@ def _clean_html(html: str) -> str:
                          ('&eacute;', 'é'), ('&iacute;', 'í'), ('&oacute;', 'ó'),
                          ('&uacute;', 'ú'), ('&iexcl;', '¡'), ('&iquest;', '¿')]:
         html = html.replace(entity, char)
-    # Normalize whitespace
+    # Normalize whitespace: collapse multiple spaces, strip line ends
+    html = re.sub(r' {2,}', ' ', html)
     lines = [ln.strip() for ln in html.splitlines()]
     return '\n'.join(ln for ln in lines if ln)
 

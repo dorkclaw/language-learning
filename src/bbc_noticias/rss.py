@@ -23,18 +23,12 @@ def parse_rss_datetime(date_str: str) -> Optional[datetime]:
     """Parse RFC 822 / RFC 2822 date strings found in RSS <pubDate>."""
     if not date_str:
         return None
-    # RSS dates look like: "Fri, 08 May 2026 12:00:00 GMT"
+    # RSS dates are RFC 822 / RFC 2822 — parsedate_to_datetime handles them directly
     try:
-        # Python's fromtimestamp can't parse RFC 822 directly — use manual parse
         from email.utils import parsedate_to_datetime
-        return parsedate_to_datetime(date_str)
+        return parsedate_to_datetime(date_str.strip())
     except Exception:
-        try:
-            # Fallback: strip and parse manually
-            date_str = date_str.strip()
-            return datetime.fromisoformat(date_str.replace("GMT", "+0000"))
-        except Exception:
-            return None
+        return None
 
 
 def fetch_stories(max_age_hours: int = 24) -> list[dict]:

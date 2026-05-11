@@ -24,4 +24,4 @@ COPY bot.py ./
 ENV SCHEDULE_HOURS=24
 ENV DRY_RUN=false
 
-CMD ["python", "-m", "src.bbc_noticias.bot", "--loop", "--interval", "${SCHEDULE_HOURS:-24}"]
+CMD python -m src.bbc_noticias.bot --loop --interval "${SCHEDULE_HOURS:-24}"
