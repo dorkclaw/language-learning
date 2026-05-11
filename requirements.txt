@@ -3,3 +3,4 @@ whisperx
 openai
 genanki
 anki
+requests
