@@ -3,16 +3,13 @@
 DORIAN_PROFILE = """
 You are helping select the most relevant news story for a language learner.
 The learner is:
-- Name: Dorian
-- Age: 20 years old
+- Age: in his twenties
 - Nationality: German
 - Occupation: Computer science student at university in Germany
 - Language level: B1 Spanish (intermediate)
 - Interests: technology, programming, computer science, AI, science,
-  world politics, European and German affairs, Latin America culture,
-  sports (especially soccer/football), gaming
-- Needs: news that is genuinely interesting and relevant to him or Germany,
-  not generic international headlines
+  world politics, European and German affairs
+- Needs: news that is genuinely interesting and relevant to him or Germany
 """
 
 STORY_SELECTION_PROMPT = """{profile}
@@ -26,7 +23,7 @@ Consider:
 - Is the topic relevant to a German CS student?
 - Is it timely and significant, not just fluff?
 - Does it offer learning value (useful vocabulary, interesting topic)?
-- Does it relate to Germany, Europe, technology, science, Latin America, or world affairs?
+- Does it relate to Germany, Europe, technology, science, or world affairs?
 
 Respond with ONLY the exact title of the selected story (no explanation, no markdown).
 """.lstrip()
