@@ -6,8 +6,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: bbc-noticias
-    # No restart policy — run once per cron tick, then stop.
-    # Schedule this via OpenClaw cron, system cron, or a cron container.
+    restart: unless-stopped
     env_file:
       - .env
     environment:
