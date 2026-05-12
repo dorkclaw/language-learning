@@ -13,10 +13,12 @@ from typing import Optional
 import requests
 
 FEEDS = [
+    # BBC Mundo
     "https://www.bbc.co.uk/mundo/index.xml",
     "https://www.bbc.co.uk/mundo/ultimas_noticias/index.xml",
     "https://www.bbc.co.uk/mundo/temas/internacional/index.xml",
-    # "https://www.bbc.co.uk/mundo/temas/america_latina/index.xml",
+    # El Mundo (Spain, international coverage)
+    "https://www.elmundo.es/rss/portada.xml",
 ]
 
 
