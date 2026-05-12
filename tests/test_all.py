@@ -119,26 +119,27 @@ class TestFetchStories(TestCase):
         ).encode('utf-8')
 
     def test_parses_single_story(self):
-        """All 4 feeds return the same test item → 4 merged stories."""
+        """All 3 active feeds return the same test item → 3 merged stories."""
         xml = self._rss_xml('Mi primera historia', 'https://bbc.com/123')
         with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
-        self.assertEqual(len(stories), 4)  # one per feed
+        self.assertEqual(len(stories), 3)  # one per feed (3 active feeds)
         self.assertEqual(stories[0]['title'], 'Mi primera historia')
         self.assertEqual(stories[0]['link'], 'https://bbc.com/123')
 
     def test_parses_multiple_stories(self):
-        """Each feed has 2 items → 8 merged stories total."""
+        """Each feed has 2 items → 6 merged stories total (3 active feeds)."""
+        recent_date = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         xml = (
-            b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<rss version="2.0"><channel><title>BBC</title>'
-            b'<item><title>Story A</title><link>https://a.com</link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
-            b'<item><title>Story B</title><link>https://b.com</link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
-            b'</channel></rss>'
-        )
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f'<rss version="2.0"><channel><title>BBC</title>'
+            f'<item><title>Story A</title><link>https://a.com</link><pubDate>{recent_date}</pubDate></item>'
+            f'<item><title>Story B</title><link>https://b.com</link><pubDate>{recent_date}</pubDate></item>'
+            f'</channel></rss>'
+        ).encode('utf-8')
         with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
-        self.assertEqual(len(stories), 8)  # 2 per feed × 4 feeds
+        self.assertEqual(len(stories), 6)  # 2 per feed × 3 feeds
         self.assertEqual(stories[0]['title'], 'Story A')
         self.assertEqual(stories[1]['title'], 'Story B')
 
@@ -151,12 +152,12 @@ class TestFetchStories(TestCase):
         self.assertEqual(len(stories), 0)
 
     def test_includes_stories_within_max_age_hours(self):
-        """Recent story is kept in all feeds → 4 stories (one per feed)."""
+        """Recent story is kept in all feeds → 3 stories (one per feed, 3 active feeds)."""
         recent_date = (datetime.now(timezone.utc) - timedelta(hours=12)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         xml = self._rss_xml('Historia reciente', 'https://bbc.com/reciente', recent_date)
         with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
-        self.assertEqual(len(stories), 4)
+        self.assertEqual(len(stories), 3)
 
     def test_skips_items_without_title(self):
         """Items with empty titles are skipped → 0 stories."""
@@ -190,12 +191,13 @@ class TestFetchStories(TestCase):
 
     def test_uses_source_from_channel_title(self):
         """Source label comes from channel/title element."""
+        recent_date = (datetime.now(timezone.utc) - timedelta(hours=2)).strftime('%a, %d %b %Y %H:%M:%S GMT')
         xml = (
-            b'<?xml version="1.0" encoding="UTF-8"?>'
-            b'<rss version="2.0"><channel><title>BBC Mundo Portada</title>'
-            b'<item><title>S</title><link>https://x.com</link><pubDate>Fri, 08 May 2026 12:00:00 GMT</pubDate></item>'
-            b'</channel></rss>'
-        )
+            f'<?xml version="1.0" encoding="UTF-8"?>'
+            f'<rss version="2.0"><channel><title>BBC Mundo Portada</title>'
+            f'<item><title>S</title><link>https://x.com</link><pubDate>{recent_date}</pubDate></item>'
+            f'</channel></rss>'
+        ).encode('utf-8')
         with _make_mock_get_call(xml):
             stories = fetch_stories(max_age_hours=24)
         self.assertEqual(stories[0]['source'], 'BBC Mundo Portada')

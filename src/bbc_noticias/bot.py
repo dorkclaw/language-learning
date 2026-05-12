@@ -4,15 +4,13 @@ BBC Noticias Bot — main entrypoint.
 Fetches BBC Mundo RSS → selects most relevant story for Dorian via OpenRouter →
 fetches & simplifies the article → sends to Discord and/or Telegram.
 
-Run once:
+Run once (how it works with cron):
     python -m src.bbc_noticias.bot
 
-Run on a schedule (Docker):
-    python -m src.bbc_noticias.bot --loop --interval 24
+For cron: schedule this script to run once a day via your system's cron,
+docker-compose cron, or OpenClaw's built-in cron.
 """
-import argparse
 import sys
-import time
 from pathlib import Path
 
 # Allow running from repo root or project root
@@ -92,31 +90,5 @@ def run() -> bool:
     return True
 
 
-def run_loop(interval_hours: float = 24):
-    """Run the bot on a schedule."""
-    while True:
-        success = run()
-        if success:
-            print(f"\nSleeping for {interval_hours}h...")
-        else:
-            print("\n[warning] Previous run failed. Retrying sooner (1h)...")
-        time.sleep(3600 if not success else interval_hours * 3600)
-
-
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="BBC Noticias language learning bot")
-    parser.add_argument(
-        "--loop", action="store_true", help="Run continuously on a schedule"
-    )
-    parser.add_argument(
-        "--interval",
-        type=float,
-        default=24,
-        help="Hours between runs in loop mode (default: 24)",
-    )
-    args = parser.parse_args()
-
-    if args.loop:
-        run_loop(args.interval)
-    else:
-        run()
+    run()
