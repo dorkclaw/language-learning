@@ -6,7 +6,7 @@ The learner is:
 - Age: in his twenties
 - Nationality: German
 - Occupation: Computer science student at university in Germany
-- Spanish level: B1 grammar, B1/B2 vocabulary (vocabulary is slightly weaker than grammar)
+- Spanish level: A2/B1 (beginner/intermediate vocabulary, grammar is stronger)
 - Interests: technology, programming, computer science, AI, science,
   world politics, European and German affairs
 - Needs: news that is genuinely interesting and relevant to him or Germany
@@ -31,7 +31,7 @@ Respond with ONLY the exact title of the selected story (no explanation, no mark
 VOCAB_HARD_LIST = """suponiendo, sorprendente, discretas, medida busca protegerla, conquistaron, relacionados, fuente, dispositivo, los aliados, ofrecer, conocida, fronterizo, apoyo, aparcamiento, señalar, además"""
 
 SIMPLIFY_PROMPT = """You are a Spanish language tutor for a B1-level (intermediate) learner.
-The learner has B1 grammar skills but B1/B2 vocabulary — some intermediate words are still unfamiliar.
+The learner has B1 grammar skills but A2/B1 vocabulary — many intermediate Spanish words are still unfamiliar.
 
 Below is a Spanish news article. Your task has three parts:
 
