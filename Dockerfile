@@ -15,15 +15,14 @@ RUN pip install uv
 COPY pyproject.toml uv.lock* .env.example* ./
 
 # Install Python dependencies
-RUN uv sync --frozen --no-dev
+RUN uv sync --no-dev
 
 # Copy application code
 COPY src/ ./src/
 
-# Copy and install crontab (runs daily at 08:00 Berlin time)
-# Copy crontab; cron reads /etc/cron.d automatically (no crontab install)
-COPY crontab /etc/cron.d/bbc-noticias
-RUN chmod 0644 /etc/cron.d/bbc-noticias
+# Copy entrypoint script (validates crontab before starting cron)
+COPY entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
 
 ENV PYTHONUNBUFFERED=1
 

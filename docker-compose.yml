@@ -16,5 +16,4 @@ services:
       - ./crontab:/app/crontab:ro
       # Persist state (seen articles, logs, etc.) across runs
       - ./data:/app/data
-    entrypoint: >
-      /bin/sh -c "cp /app/crontab /etc/cron.d/bbc-noticias && chmod 0644 /etc/cron.d/bbc-noticias && cron -f"
+    entrypoint: /app/entrypoint.sh

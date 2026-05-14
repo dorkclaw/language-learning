@@ -10,11 +10,7 @@ Run once (how it works with cron):
 For cron: schedule this script to run once a day via your system's cron,
 docker-compose cron, or OpenClaw's built-in cron.
 """
-import sys
-from pathlib import Path
 
-# Allow running from repo root or project root
-sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 
 from src.bbc_noticias.rss import fetch_stories
 from src.bbc_noticias.scraper import fetch_article
