@@ -182,4 +182,3 @@ if __name__ == "__main__":
     # Quick smoke test
     url = "https://www.bbc.com/mundo/articles/c4gl71dez8zo"
     text = fetch_article(url)
-    print(text[:500] if text else "No article text found")

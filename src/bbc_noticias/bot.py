@@ -12,6 +12,9 @@ docker-compose cron, or OpenClaw's built-in cron.
 """
 
 
+from dotenv import load_dotenv
+load_dotenv()
+
 from src.bbc_noticias.rss import fetch_stories
 from src.bbc_noticias.scraper import fetch_article
 from src.bbc_noticias.selector import select_best_story
