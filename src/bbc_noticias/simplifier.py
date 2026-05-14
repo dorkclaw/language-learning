@@ -4,7 +4,7 @@ Calls OpenRouter with SIMPLIFY_PROMPT: simplifies sentence structures
 and adds English translations for difficult words.
 """
 from .llm import LLM
-from .prompts import SIMPLIFY_PROMPT, DORIAN_PROFILE
+from .prompts import SIMPLIFY_PROMPT, DORIAN_PROFILE, VOCAB_HARD_LIST
 
 
 def simplify_article(article_text: str, llm: LLM) -> str:
@@ -21,6 +21,7 @@ def simplify_article(article_text: str, llm: LLM) -> str:
 
     prompt = SIMPLIFY_PROMPT.format(
         profile=DORIAN_PROFILE,
+        hard_words=VOCAB_HARD_LIST,
         article_text=article_text,
     )
 

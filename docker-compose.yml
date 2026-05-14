@@ -10,8 +10,7 @@ services:
     env_file:
       - .env
     environment:
-      - SCHEDULE_HOURS=${SCHEDULE_HOURS:-24}
       - DRY_RUN=${DRY_RUN:-false}
     volumes:
-      # Persist state (seen articles, logs, etc.) across restarts
+      # Persist state (seen articles, logs, etc.) across runs
       - ./data:/app/data
