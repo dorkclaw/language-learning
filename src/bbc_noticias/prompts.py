@@ -6,7 +6,7 @@ The learner is:
 - Age: in his twenties
 - Nationality: German
 - Occupation: Computer science student at university in Germany
-- Language level: B1 Spanish (intermediate)
+- Spanish level: B1 grammar, B1/B2 vocabulary (vocabulary is slightly weaker than grammar)
 - Interests: technology, programming, computer science, AI, science,
   world politics, European and German affairs
 - Needs: news that is genuinely interesting and relevant to him or Germany
@@ -14,7 +14,7 @@ The learner is:
 
 STORY_SELECTION_PROMPT = """{profile}
 
-Below are the top stories from BBC Mundo (Spanish) published in the last 24 hours:
+Below are the top stories from BBC Mundo and El Mundo (Spanish) published in the last 24 hours:
 
 {story_list}
 
@@ -28,8 +28,10 @@ Consider:
 Respond with ONLY the exact title of the selected story (no explanation, no markdown).
 """.lstrip()
 
+VOCAB_HARD_LIST = """suponiendo, sorprendente, discretas, medida busca protegerla, conquistaron, relacionados, fuente, dispositivo, los aliados, ofrecer, conocida, fronterizo, apoyo, aparcamiento, señalar, además"""
+
 SIMPLIFY_PROMPT = """You are a Spanish language tutor for a B1-level (intermediate) learner.
-The learner is: {profile}
+The learner has B1 grammar skills but B1/B2 vocabulary — some intermediate words are still unfamiliar.
 
 Below is a Spanish news article. Your task has three parts:
 
@@ -48,8 +50,9 @@ Below is a Spanish news article. Your task has three parts:
 3. TRANSLATE DIFFICULT WORDS: For any word that is:
    - A complex or uncommon Spanish word, OR
    - Uses advanced vocabulary beyond B1 level
-   Add the English translation in parentheses immediately after the word.
-Examples of difficult words: los aliados, ofrecer, conocida, fronterizo, apoyo, aparcamiento, señalar, además.
+   Add the English translation in `||(text)||` format immediately after the word.
+   Common difficult words to watch for: {hard_words}
+   The `||(text)||` format is used so the translation can be displayed as a Discord spoiler/hidden text.
 
 Rules:
 - Do NOT add explanations or notes outside the text
