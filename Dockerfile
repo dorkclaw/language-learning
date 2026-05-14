@@ -3,8 +3,9 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
-# Install curl for healthchecks
-RUN apt-get update && apt-get install -y --no-install-recommends curl ca-certificates \
+# Install cron + curl for healthchecks
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        cron curl ca-certificates bsdmainutils \
     && rm -rf /var/lib/apt/lists/*
 
 # Install uv for fast dependency install
@@ -19,8 +20,12 @@ RUN uv sync --frozen --no-dev
 # Copy application code
 COPY src/ ./src/
 
+# Copy and install crontab (runs daily at 08:00 Berlin time)
+COPY crontab /etc/cron.d/bbc-noticias
+RUN chmod 0644 /etc/cron.d/bbc-noticias \
+    && crontab /etc/cron.d/bbc-noticias
+
 ENV PYTHONUNBUFFERED=1
 
-# One-shot run: execute once and exit.
-# Schedule via external cron (e.g. OpenClaw cron, system cron, docker-compose cron).
-CMD ["uv", "run", "python", "-m", "src.bbc_noticias.bot"]
+# Container stays alive as cron daemon; bot is invoked by cron at 08:00 CET
+CMD ["cron", "-f"]
