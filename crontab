@@ -1,4 +1,4 @@
 # BBC Noticias bot — runs daily at 08:00 CET/CEST
-CRON_TZ=Europe/Berlin
+
 PATH=/usr/local/bin:/usr/bin:/bin
 0 8 * * * root cd /app && /app/.venv/bin/python -m src.bbc_noticias.bot > /proc/1/fd/1 2>&1
