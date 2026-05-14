@@ -21,9 +21,9 @@ RUN uv sync --frozen --no-dev
 COPY src/ ./src/
 
 # Copy and install crontab (runs daily at 08:00 Berlin time)
+# Copy crontab; cron reads /etc/cron.d automatically (no crontab install)
 COPY crontab /etc/cron.d/bbc-noticias
-RUN chmod 0644 /etc/cron.d/bbc-noticias \
-    && crontab /etc/cron.d/bbc-noticias
+RUN chmod 0644 /etc/cron.d/bbc-noticias
 
 ENV PYTHONUNBUFFERED=1
 
