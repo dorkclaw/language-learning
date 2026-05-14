@@ -3,9 +3,7 @@ User profile — tune the bot's behaviour via environment variables.
 """
 import os
 from dataclasses import dataclass, field
-from dotenv import load_dotenv
 
-load_dotenv()
 
 
 def _parse_bool(value) -> bool:
