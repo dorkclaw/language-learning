@@ -2,11 +2,14 @@
 Article scraper — fetches a BBC Mundo article URL and extracts readable text.
 Uses basic regex + HTML parsing to strip navigation/clutter.
 """
+import logging
 import re
 import requests
 from typing import Optional
 
 # BBC Mundo uses this User-Agent to get the article page
+logger = logging.getLogger(__name__)
+
 HEADERS = {
     "User-Agent": (
         "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
@@ -42,7 +45,7 @@ def fetch_article(url: str, timeout: int = 15) -> Optional[str]:
         return text if text else None
 
     except Exception as e:
-        print(f"[scraper] Failed to fetch {url}: {e}")
+        logger.warning("[scraper] Failed to fetch %s: %s", url, e)
         return None
 
 

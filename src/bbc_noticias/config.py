@@ -1,8 +1,12 @@
 """
 User profile — tune the bot's behaviour via environment variables.
 """
+
+import logging
 import os
 from dataclasses import dataclass, field
+
+logger = logging.getLogger(__name__)
 
 
 def _parse_bool(value) -> bool:
@@ -57,7 +61,7 @@ def load() -> Config:
     cfg = Config()
     issues = cfg.validate()
     if issues:
-        print("[config] Warning — missing configuration:")
+        logger.warning("[config] Missing configuration:")
         for issue in issues:
-            print(f"  - {issue}")
+            logger.warning("  - %s", issue)
     return cfg
