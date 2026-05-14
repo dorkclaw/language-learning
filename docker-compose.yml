@@ -12,5 +12,8 @@ services:
     environment:
       - DRY_RUN=${DRY_RUN:-false}
     volumes:
+      # Mount crontab into app dir; entrypoint copies to /etc/cron.d/ with correct ownership
+      - ./crontab:/app/crontab:ro
       # Persist state (seen articles, logs, etc.) across runs
       - ./data:/app/data
+    entrypoint: /app/entrypoint.sh
