@@ -14,6 +14,8 @@ import os
 import requests
 from typing import Optional
 
+from src.bbc_noticias.sent_stories import mark_sent
+
 
 def _discord_post(content: str) -> bool:
     url = os.getenv("DISCORD_WEBHOOK_URL", "").strip()
@@ -111,5 +113,9 @@ def send_article(
     ).replace("_", ""):
         plain = f"{header}{simplified_text}".replace("*", "").replace("_", "")
         telegram_ok = _telegram_post(plain, parse_mode=None)
+
+    # Record successfully sent URLs so we don't repeat them
+    if discord_ok or telegram_ok:
+        mark_sent(original_url)
 
     return {"discord": discord_ok, "telegram": telegram_ok}

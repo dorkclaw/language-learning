@@ -17,6 +17,7 @@ from src.bbc_noticias.scraper import fetch_article
 from src.bbc_noticias.selector import select_best_story
 from src.bbc_noticias.simplifier import simplify_article
 from src.bbc_noticias.notifier import send_article
+from src.bbc_noticias.sent_stories import filter_unsent
 from src.bbc_noticias.config import load
 
 
@@ -37,6 +38,13 @@ def run() -> bool:
 
     # Limit for the selection prompt
     stories = stories[: cfg.max_stories_for_selection]
+
+    # Filter out stories we've already sent (unless we're in dry-run mode)
+    unsent_links = set(filter_unsent([s["link"] for s in stories]))
+    stories = [s for s in stories if s["link"] in unsent_links]
+    if not stories:
+        print("  All recent stories have already been sent. Exiting.")
+        return False
 
     # 2. Select best story
     print("\n[2/4] Selecting most relevant story...")
