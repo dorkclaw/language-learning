@@ -207,20 +207,22 @@ def test_discord_bot_uses_asyncio_to_thread():
     assert "to_thread(simplify_article" in bot_src, "simplify_article should be in asyncio.to_thread"
 
     # Indirect calls: fetch_stories and select_best_story are called inside a blocking lambda
-    # Check the blocking function contains the call
-    import re
-
-    # Find the fetch_and_pick_story function and verify it uses to_thread for both calls
-    fn_match = re.search(
-        r"def fetch_and_pick_story.*?return.*?select_best_story.*?return",
-        bot_src,
-        re.DOTALL,
-    )
-    assert fn_match, "fetch_and_pick_story should call select_best_story inside to_thread"
-    fn_body = fn_match.group(0)
-    assert "fetch_stories" in fn_body
-    assert "select_best_story" in fn_body
-    assert "asyncio.to_thread" in fn_body
+    # Use line-based extraction to reliably grab the function body
+    lines = bot_src.split("\n")
+    in_fn = False
+    fn_lines = []
+    for line in lines:
+        if "def fetch_and_pick_story" in line:
+            in_fn = True
+        if in_fn:
+            fn_lines.append(line)
+            if len(fn_lines) > 1 and line.startswith("def ") and "fetch_and_pick_story" not in line:
+                break
+    fn_body = "\n".join(fn_lines)
+    assert "fetch_stories" in fn_body, f"fetch_stories not in fn_body"
+    assert "filter_unsent" in fn_body, "filter_unsent not in fn_body"
+    assert "select_best_story" in fn_body, "select_best_story not in fn_body"
+    assert "to_thread" in fn_body, "to_thread not in fn_body"
 
 
 # ---------------------------------------------------------------------------

@@ -78,11 +78,16 @@ async def fetch_and_pick_story(llm: LLM) -> dict:
 
     def blocking() -> list[dict]:
         stories = fetch_stories(max_age_hours=48)
+        logger.info("[bot] fetch_stories returned %d stories", len(stories))
         # Avoid already-sent stories so the button/slash always pick fresh ones
-        return filter_unsent(stories)
+        filtered = filter_unsent(stories)
+        logger.info("[bot] filter_unsent reduced to %d unsent stories", len(filtered))
+        return filtered
 
     def blocking_with_llm(stories: list[dict]) -> dict:
-        return select_best_story(stories, llm)
+        selected = select_best_story(stories, llm)
+        logger.info("[bot] LLM selected: %s", selected.get("title", "unknown"))
+        return selected
 
     stories = await asyncio.to_thread(blocking)
     if not stories:
@@ -97,6 +102,8 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
         await interaction.followup.send("❌ Este comando solo funciona en un canal de texto.", ephemeral=True)
         return
 
+    logger.info("[bot] Sending story: %s", story.get("title", "unknown"))
+
     message_content = (
         f"📰 **{story['title']}**\n"
         f"🔗 {story['link']}\n\n"
@@ -105,6 +112,7 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
 
     # Post the message
     msg = await channel.send(message_content)
+    logger.info("[bot] Posted message to channel, created thread")
 
     # Create a thread on that message
     thread_name = story["title"][:100]
@@ -114,19 +122,35 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
         message=msg,
         auto_archive_duration=60,
     )
+    logger.info("[bot] Created thread: %s", thread.name)
 
     # Simplify and post full article in the thread (runs blocking work in thread pool)
     try:
+        logger.info("[bot] Fetching article: %s", story["link"])
         article_text = await asyncio.to_thread(fetch_article, story["link"])
-        if article_text:
-            simplified = await asyncio.to_thread(simplify_article, article_text, interaction.client.llm)
+        if not article_text:
+            logger.warning("[bot] fetch_article returned empty for: %s", story["link"])
+            simplified = story.get("description", "Sin descripción disponible.")
+        elif not isinstance(article_text, str):
+            logger.error("[bot] fetch_article returned type %s, expected str", type(article_text).__name__)
+            simplified = story.get("description", "Sin descripción disponible.")
+        elif len(article_text) <= 50:
+            logger.warning("[bot] fetch_article returned too short (%d chars): %s", len(article_text), story["link"])
+            simplified = story.get("description", "Sin descripción disponible.")
         else:
+            logger.info("[bot] Fetched %d chars, simplifying with LLM...", len(article_text))
+            simplified = await asyncio.to_thread(simplify_article, article_text, interaction.client.llm)
+            logger.info("[bot] LLM simplification done, got %d chars", len(simplified) if isinstance(simplified, str) else -1)
+        # Guard against LLM returning non-string (e.g. JSON dict)
+        if not isinstance(simplified, str):
+            logger.error("[bot] simplify_article returned type %s, expected str", type(simplified).__name__)
             simplified = story.get("description", "Sin descripción disponible.")
         # Discord messages are max 2000 chars — split if needed
         for i in range(0, len(simplified), 1900):
             await thread.send(f"📖 **{story['title']}**\n\n{simplified[i : i + 1900]}")
+        logger.info("[bot] Story sent successfully")
     except Exception as e:
-        logger.warning("[bot] Failed to simplify story: %s", e)
+        logger.error("[bot] Failed to simplify story: %s — %s", type(e).__name__, e)
         await thread.send(f"📖 {story.get('description', 'Sin descripción disponible.')}")
 
 
