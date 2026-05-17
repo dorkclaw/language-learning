@@ -19,7 +19,7 @@ from src.bbc_noticias.config import load as load_config
 from src.bbc_noticias.rss import fetch_stories
 from src.bbc_noticias.scraper import fetch_article
 from src.bbc_noticias.selector import select_best_story
-from src.bbc_noticias.sent_stories import filter_unsent
+from src.bbc_noticias.sent_stories import filter_unsent, mark_sent
 from src.bbc_noticias.simplifier import simplify_article
 from src.bbc_noticias.llm import LLM
 from src.bbc_noticias.queue import pop_story, pending_count
@@ -152,6 +152,7 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
         max_content = 1992 - len(prefix)  # 1992 = 2000 - 8 for safety margin
         for i in range(0, len(simplified), max_content):
             await thread.send(prefix + simplified[i : i + max_content])
+        mark_sent(story["link"])
         logger.info("[bot] Story sent successfully")
     except Exception as e:
         logger.error("[bot] Failed to simplify story: %s — %s", type(e).__name__, e)
