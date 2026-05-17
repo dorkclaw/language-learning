@@ -16,8 +16,9 @@ from dotenv import load_dotenv
 
 from src.bbc_noticias.config import load as load_config
 from src.bbc_noticias.rss import fetch_stories
+from src.bbc_noticias.scraper import fetch_article
 from src.bbc_noticias.selector import select_best_story
-from src.bbc_noticias.simplifier import simplify_story
+from src.bbc_noticias.simplifier import simplify_article
 from src.bbc_noticias.llm import LLM
 from src.bbc_noticias.queue import enqueue_story, pop_story, pending_count
 
@@ -97,11 +98,11 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
 
     # Simplify and post full article in the thread
     try:
-        simplified = simplify_story(
-            title=story["title"],
-            original_url=story["link"],
-            description=story.get("description", ""),
-        )
+        article_text = fetch_article(story["link"])
+        if article_text:
+            simplified = simplify_article(article_text, interaction.client.llm)
+        else:
+            simplified = story.get("description", "Sin descripción disponible.")
         await thread.send(f"📖 **{story['title']}**\n\n{simplified}")
     except Exception as e:
         logger.warning("[bot] Failed to simplify story: %s", e)
