@@ -3,6 +3,7 @@ Discord bot — responds to slash commands and button clicks.
 Runs alongside the cron container; they communicate via a shared queue file.
 """
 
+import asyncio
 import logging
 import os
 import sys
@@ -75,8 +76,6 @@ class StoryView(discord.ui.View):
 
 async def fetch_and_pick_story(llm: LLM) -> dict:
     """Fetch RSS stories and let LLM pick the best one (runs blocking work in thread pool)."""
-    import asyncio
-
     def blocking() -> list[dict]:
         stories = fetch_stories(max_age_hours=48)
         logger.info("[bot] fetch_stories returned %d stories", len(stories))
