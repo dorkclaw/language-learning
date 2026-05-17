@@ -118,9 +118,12 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
     # Simplify and post full article in the thread (runs blocking work in thread pool)
     try:
         article_text = await asyncio.to_thread(fetch_article, story["link"])
-        if article_text:
+        if article_text and isinstance(article_text, str) and len(article_text) > 50:
             simplified = await asyncio.to_thread(simplify_article, article_text, interaction.client.llm)
         else:
+            simplified = story.get("description", "Sin descripción disponible.")
+        # Guard against LLM returning non-string (e.g. JSON dict)
+        if not isinstance(simplified, str):
             simplified = story.get("description", "Sin descripción disponible.")
         # Discord messages are max 2000 chars — split if needed
         for i in range(0, len(simplified), 1900):
