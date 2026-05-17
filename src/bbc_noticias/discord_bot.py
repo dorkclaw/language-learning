@@ -52,7 +52,8 @@ class StoryButton(discord.ui.Button):
             try:
                 story = await fetch_and_pick_story(interaction.client.llm)
             except Exception as e:
-                await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+                logger.error("[bot] fetch_and_pick_story failed (button): %s", e, exc_info=True)
+                await interaction.followup.send("❌ No se pudo obtener historia. Inténtalo de nuevo.", ephemeral=True)
                 return
         try:
             await send_story_thread(interaction, story)
@@ -178,7 +179,8 @@ async def historia(interaction: discord.Interaction):
         try:
             story = await fetch_and_pick_story(client.llm)
         except Exception as e:
-            await interaction.followup.send(f"❌ No se pudo obtener historia: {e}")
+            logger.error("[bot] fetch_and_pick_story failed: %s", e, exc_info=True)
+            await interaction.followup.send("❌ No se pudo obtener historia. Inténtalo de nuevo.")
             return
 
     try:
