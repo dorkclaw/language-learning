@@ -59,6 +59,7 @@ Rules:
 - Preserve all paragraph structure
 - Keep the Spanish text as-is where it's already appropriate
 - If a sentence is already simple, leave it unchanged
+- Produce the COMPLETE simplified text — do not truncate, abbreviate, or omit any part of the article
 
 Spanish article:
 ---
