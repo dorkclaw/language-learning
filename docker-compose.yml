@@ -13,7 +13,7 @@ services:
     volumes:
       - ./crontab:/app/crontab:ro
       - ./data:/app/data
-      - bbc-shared:/app/shared
+      - ./shared:/app/shared
       - ./.env:/app/.env
 
   bbc-bot:
@@ -25,7 +25,4 @@ services:
     env_file:
       - .env
     volumes:
-      - bbc-shared:/app/shared
-
-volumes:
-  bbc-shared:
+      - ./shared:/app/shared
