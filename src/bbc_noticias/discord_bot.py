@@ -148,8 +148,10 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
             logger.error("[bot] simplify_article returned type %s, expected str", type(simplified).__name__)
             simplified = story.get("description", "Sin descripción disponible.")
         # Discord messages are max 2000 chars — split if needed
-        for i in range(0, len(simplified), 1900):
-            await thread.send(f"📖 **{story['title']}**\n\n{simplified[i : i + 1900]}")
+        prefix = f"📖 **{story['title']}**\n\n"
+        max_content = 1992 - len(prefix)  # 1992 = 2000 - 8 for safety margin
+        for i in range(0, len(simplified), max_content):
+            await thread.send(prefix + simplified[i : i + max_content])
         logger.info("[bot] Story sent successfully")
     except Exception as e:
         logger.error("[bot] Failed to simplify story: %s — %s", type(e).__name__, e)
