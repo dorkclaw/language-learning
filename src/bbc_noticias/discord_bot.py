@@ -3,6 +3,7 @@ Discord bot — responds to slash commands and button clicks.
 Runs alongside the cron container; they communicate via a shared queue file.
 """
 
+import asyncio
 import logging
 import os
 import sys
@@ -52,7 +53,8 @@ class StoryButton(discord.ui.Button):
             try:
                 story = await fetch_and_pick_story(interaction.client.llm)
             except Exception as e:
-                await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
+                logger.error("[bot] fetch_and_pick_story failed (button): %s", e, exc_info=True)
+                await interaction.followup.send("❌ No se pudo obtener historia. Inténtalo de nuevo.", ephemeral=True)
                 return
         try:
             await send_story_thread(interaction, story)
@@ -74,13 +76,12 @@ class StoryView(discord.ui.View):
 
 async def fetch_and_pick_story(llm: LLM) -> dict:
     """Fetch RSS stories and let LLM pick the best one (runs blocking work in thread pool)."""
-    import asyncio
-
     def blocking() -> list[dict]:
         stories = fetch_stories(max_age_hours=48)
         logger.info("[bot] fetch_stories returned %d stories", len(stories))
         # Avoid already-sent stories so the button/slash always pick fresh ones
-        unsent_links = set(filter_unsent([s["link"] for s in stories]))
+        filtered = filter_unsent([s["link"] for s in stories])
+        unsent_links = set(filtered)
         stories = [s for s in stories if s["link"] in unsent_links]
         logger.info("[bot] filter_unsent reduced to %d unsent stories", len(stories))
         return stories
@@ -179,7 +180,8 @@ async def historia(interaction: discord.Interaction):
         try:
             story = await fetch_and_pick_story(client.llm)
         except Exception as e:
-            await interaction.followup.send(f"❌ No se pudo obtener historia: {e}")
+            logger.error("[bot] fetch_and_pick_story failed: %s", e, exc_info=True)
+            await interaction.followup.send("❌ No se pudo obtener historia. Inténtalo de nuevo.")
             return
 
     try:
