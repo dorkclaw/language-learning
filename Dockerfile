@@ -3,10 +3,14 @@ FROM python:3.13-slim
 
 WORKDIR /app
 
+ENV TZ=Europe/Berlin
+
 # Install cron + curl for healthchecks
 RUN apt-get update && apt-get install -y --no-install-recommends \
-        cron curl ca-certificates bsdmainutils \
-    && rm -rf /var/lib/apt/lists/*
+    cron curl ca-certificates bsdmainutils tzdata \
+    && rm -rf /var/lib/apt/lists/* \
+    && ln -snf /usr/share/zoneinfo/$TZ /etc/localtime \
+    && echo $TZ > /etc/timezone
 
 # Install uv for fast dependency install
 RUN pip install uv

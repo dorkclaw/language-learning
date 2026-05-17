@@ -10,11 +10,16 @@ Telegram:
   TELEGRAM_CHAT_ID     — numeric chat ID (channel, group, or DM)
 """
 
+import logging
+import os
+
+from src.bbc_noticias.sent_stories import mark_sent
+import logging
 import os
 import requests
 from typing import Optional
 
-from src.bbc_noticias.sent_stories import mark_sent
+logger = logging.getLogger(__name__)
 
 
 def _discord_post(content: str) -> bool:
@@ -29,10 +34,10 @@ def _discord_post(content: str) -> bool:
             resp = requests.post(url, json=data, timeout=10)
             if resp.status_code in (200, 204):
                 return True
-            print(f"[discord] HTTP {resp.status_code}: {resp.text[:200]}")
+            logger.warning("[discord] HTTP %s: %s", resp.status_code, resp.text[:200])
             return False
         except Exception as e:
-            print(f"[discord] Error: {e}")
+            logger.warning("[discord] Error: %s", e)
             return False
     else:
         # Split into chunks of 1990 chars and send each as a separate message
@@ -43,10 +48,10 @@ def _discord_post(content: str) -> bool:
             try:
                 resp = requests.post(url, json=data, timeout=10)
                 if resp.status_code not in (200, 204):
-                    print(f"[discord] chunk {i}: HTTP {resp.status_code}")
+                    logger.warning("[discord] chunk %s: HTTP %s", i, resp.status_code)
                     all_ok = False
             except Exception as e:
-                print(f"[discord] chunk {i}: {e}")
+                logger.warning("[discord] chunk %s: %s", i, e)
                 all_ok = False
         return all_ok
 
@@ -69,10 +74,10 @@ def _telegram_post(content: str, parse_mode: Optional[str] = "MarkdownV2") -> bo
             resp = requests.post(url, json=data, timeout=10)
             if resp.status_code == 200:
                 return True
-            print(f"[telegram] HTTP {resp.status_code}: {resp.text[:200]}")
+            logger.warning("[telegram] HTTP %s: %s", resp.status_code, resp.text[:200])
             return False
         except Exception as e:
-            print(f"[telegram] Error: {e}")
+            logger.warning("[telegram] Error: %s", e)
             return False
 
     if len(content) <= MAX_MSG:
@@ -114,7 +119,7 @@ def send_article(
         plain = f"{header}{simplified_text}".replace("*", "").replace("_", "")
         telegram_ok = _telegram_post(plain, parse_mode=None)
 
-    # Record successfully sent URLs so we don't repeat them
+# Record successfully sent URLs so we don't repeat them
     if discord_ok or telegram_ok:
         mark_sent(original_url)
 
