@@ -1,18 +1,31 @@
 services:
-  bbc-noticias:
+  bbc-cron:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: bbc-noticias
+    container_name: bbc-cron
     restart: unless-stopped
+    entrypoint: ["/app/entrypoint.sh"]
     env_file:
       - .env
     environment:
       - DRY_RUN=${DRY_RUN:-false}
     volumes:
-      # Mount crontab into app dir; entrypoint copies to /etc/cron.d/ with correct ownership
       - ./crontab:/app/crontab:ro
-      # Persist state (seen articles, logs, etc.) across runs
       - ./data:/app/data
+      - bbc-shared:/app/shared
       - ./.env:/app/.env
-    entrypoint: /app/entrypoint.sh
+
+  bbc-bot:
+    build:
+      context: .
+      dockerfile: Dockerfile.bot
+    container_name: bbc-bot
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      - bbc-shared:/app/shared
+
+volumes:
+  bbc-shared:

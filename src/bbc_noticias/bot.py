@@ -90,6 +90,15 @@ def run() -> bool:
         pub_date=best["pub_date"],
     )
     log.info("  Discord: %s | Telegram: %s", "✅" if result["discord"] else "❌", "✅" if result["telegram"] else "❌")
+
+    # Also enqueue for the Discord bot (shares queue via volume)
+    if result["discord"] or result["telegram"]:
+        try:
+            from src.bbc_noticias.queue import enqueue_story
+            enqueue_story(best)
+        except Exception as e:
+            log.warning("  Queue: ❌ (%s) — notification was already sent, ignoring", e)
+
     return True
 
 

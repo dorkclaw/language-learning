@@ -1,4 +1,5 @@
 # BBC Noticias bot — runs daily at 08:00 CET/CEST
 
 PATH=/usr/local/bin:/usr/bin:/bin
+SHARED_QUEUE_PATH=/app/shared/queue.json
 0 8 * * * root cd /app && /app/.venv/bin/python -m src.bbc_noticias.bot > /proc/1/fd/1 2>&1

@@ -1,0 +1,24 @@
+# syntax=docker/dockerfile:1
+FROM python:3.13-slim
+
+WORKDIR /app
+
+ENV PYTHONUNBUFFERED=1
+
+# Install uv for fast dependency install
+RUN pip install uv
+
+# Copy pyproject.toml first (for dependency caching)
+COPY pyproject.toml uv.lock* .env.example* ./
+
+# Install Python dependencies (includes discord.py)
+RUN uv sync --no-dev
+
+# Copy application code
+COPY src/ ./src/
+
+# Copy entrypoint
+COPY bot_entrypoint.sh /app/entrypoint.sh
+RUN chmod +x /app/entrypoint.sh
+
+CMD ["/app/entrypoint.sh"]
