@@ -1,5 +1,6 @@
 """
 BBC Mundo RSS feed parser — filters stories from the last 24 hours.
+
 BBC Mundo offers these RSS feeds:
   - Portada:        https://www.bbc.co.uk/mundo/index.xml
   - Últimas:        https://www.bbc.co.uk/mundo/ultimas_noticias/index.xml
@@ -7,10 +8,14 @@ BBC Mundo offers these RSS feeds:
   - América Latina:  https://www.bbc.co.uk/mundo/temas/america_latina/index.xml
 """
 
+import logging
 import xml.etree.ElementTree as ET
 from datetime import datetime, timezone, timedelta
 from typing import Optional
+
 import requests
+
+logger = logging.getLogger(__name__)
 
 FEEDS = [
     # BBC Mundo
@@ -70,7 +75,7 @@ def fetch_stories(max_age_hours: int = 24) -> list[dict]:
 
                 pub_date = parse_rss_datetime(pub_date_str)
                 if pub_date is None:
-                    print("Pub date could not be parsed:", pub_date_str)
+                    logger.warning("Pub date could not be parsed: %s", pub_date_str)
                     continue
 
                 # Filter by age
@@ -88,12 +93,13 @@ def fetch_stories(max_age_hours: int = 24) -> list[dict]:
                 )
 
         except Exception as e:
-            print(f"[rss] Failed to fetch {feed_url}: {e}")
+            logger.warning("[rss] Failed to fetch %s: %s", feed_url, e)
 
     return all_stories
 
 
 if __name__ == "__main__":
+    logging.basicConfig(level=logging.INFO, format="%(message)s")
     stories = fetch_stories()
     print(f"Found {len(stories)} stories from the last 24h:")
     for s in stories:

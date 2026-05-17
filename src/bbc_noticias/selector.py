@@ -3,8 +3,12 @@ Story selector — asks OpenRouter which of today's BBC Mundo stories
 is most relevant for Dorian.
 """
 
+import logging
+
 from .llm import LLM
 from .prompts import STORY_SELECTION_PROMPT, DORIAN_PROFILE
+
+logger = logging.getLogger(__name__)
 
 
 def select_best_story(stories: list[dict], llm: LLM) -> dict | None:
@@ -25,7 +29,7 @@ def select_best_story(stories: list[dict], llm: LLM) -> dict | None:
 
     story_list = "\n\n".join(story_lines)
 
-    print(story_list)
+    logger.debug("Story list:\n%s", story_list)
 
     prompt = STORY_SELECTION_PROMPT.format(
         profile=DORIAN_PROFILE, story_list=story_list
@@ -45,7 +49,8 @@ def select_best_story(stories: list[dict], llm: LLM) -> dict | None:
             return s
 
     # Fallback: return first
-    print(
-        f"[selector] Could not match title '{selected_title}', falling back to first story."
+    logger.warning(
+        "[selector] Could not match title '%s', falling back to first story.",
+        selected_title,
     )
     return stories[0]
