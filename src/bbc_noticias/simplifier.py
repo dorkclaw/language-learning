@@ -3,6 +3,7 @@ Text simplifier — takes raw Spanish article text and returns a B1-adapted vers
 Calls OpenRouter with SIMPLIFY_PROMPT: simplifies sentence structures
 and adds English translations for difficult words.
 """
+
 from .llm import LLM
 from .prompts import SIMPLIFY_PROMPT, DORIAN_PROFILE, VOCAB_HARD_LIST
 
@@ -15,7 +16,7 @@ def simplify_article(article_text: str, llm: LLM) -> str:
       - English translations in (parentheses) for difficult words
     """
     # Truncate if too long (OpenRouter has context limits and high costs)
-    MAX_CHARS = 6000
+    MAX_CHARS = 20000
     if len(article_text) > MAX_CHARS:
         article_text = article_text[:MAX_CHARS] + "\n[... texto truncado ...]"
 
@@ -33,5 +34,6 @@ def simplify_article(article_text: str, llm: LLM) -> str:
         ),
         user=prompt,
         temperature=0.6,
+        max_tokens=MAX_CHARS * 2,
     )
     return simplified
