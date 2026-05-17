@@ -2,9 +2,12 @@
 OpenRouter LLM client — wraps OpenAI-compatible API for BBC Noticias bot.
 Uses openrouter/auto (or configured model) via the OpenAI SDK.
 """
+import logging
 from openai import OpenAI
 from dotenv import load_dotenv
 import os
+
+logger = logging.getLogger(__name__)
 
 load_dotenv()
 
@@ -36,7 +39,11 @@ class LLM:
             ],
             temperature=temperature,
         )
-        return response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        if not isinstance(content, str):
+            logger.error("[llm] LLM returned non-string type: %s", type(content))
+            raise TypeError(f"LLM returned {type(content).__name__}, expected str")
+        return content.strip()
 
     def complete_json(self, system: str, user: str, temperature: float = 0.3) -> dict:
         """Same as complete() but parses the response as JSON."""
