@@ -7,6 +7,7 @@ transcriptions/
 vocab/
 anki/
 cheatsheet/
+data/
 
 # Ignore environment variables (where your secret token will live)
 .env

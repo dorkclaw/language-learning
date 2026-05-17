@@ -13,6 +13,9 @@ Telegram:
 import logging
 import os
 
+from src.bbc_noticias.sent_stories import mark_sent
+import logging
+import os
 import requests
 from typing import Optional
 
@@ -115,5 +118,9 @@ def send_article(
     ).replace("_", ""):
         plain = f"{header}{simplified_text}".replace("*", "").replace("_", "")
         telegram_ok = _telegram_post(plain, parse_mode=None)
+
+# Record successfully sent URLs so we don't repeat them
+    if discord_ok or telegram_ok:
+        mark_sent(original_url)
 
     return {"discord": discord_ok, "telegram": telegram_ok}
