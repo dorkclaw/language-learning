@@ -22,7 +22,11 @@ services:
       dockerfile: Dockerfile.bot
     container_name: bbc-bot
     restart: unless-stopped
+    entrypoint: ["/app/bot_entrypoint.sh"]
     env_file:
       - .env
+    environment:
+      - SHARED_QUEUE_PATH=/app/shared/queue.json
     volumes:
       - ./shared:/app/shared
+      - ./data:/app/data
