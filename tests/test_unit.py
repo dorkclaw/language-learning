@@ -300,3 +300,21 @@ def test_llm_module_loads_dotenv():
     # Verify load_dotenv is called at module level in llm.py
     llm_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "llm.py").read_text()
     assert "load_dotenv()" in llm_src, "llm.py should call load_dotenv() at module level"
+
+
+# ---------------------------------------------------------------------------
+# Issue 11: pop_story removes from queue before Discord delivery succeeds
+# ---------------------------------------------------------------------------
+def test_pop_story_is_guarded_by_try_except():
+    """discord_bot.py re-enqueues story if send_story_thread fails."""
+    bot_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "discord_bot.py").read_text()
+
+    import re
+
+    # Both button callback and slash command should re-enqueue on failure
+    # Pattern: send_story_thread inside try/except + enqueue_story in except
+    assert re.search(
+        r"send_story_thread.*?\n.*?except.*?enqueue_story",
+        bot_src,
+        re.DOTALL,
+    ), "send_story_thread should be wrapped in try/except that re-enqueues on failure"

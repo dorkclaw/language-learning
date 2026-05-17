@@ -54,7 +54,15 @@ class StoryButton(discord.ui.Button):
             except Exception as e:
                 await interaction.followup.send(f"❌ Error: {e}", ephemeral=True)
                 return
-        await send_story_thread(interaction, story)
+        try:
+            await send_story_thread(interaction, story)
+        except Exception as e:
+            logger.error("[bot] send_story_thread failed, re-enqueueing story: %s", e)
+            # Discord failed — put it back in the queue so it can be retried
+            from src.bbc_noticias.queue import enqueue_story
+            enqueue_story(story)
+            await interaction.followup.send(f"❌ Error al enviar: {e}", ephemeral=True)
+            return
         await interaction.followup.send("✅ ¡Historias enviadas!", ephemeral=True)
 
 
@@ -149,7 +157,14 @@ async def historia(interaction: discord.Interaction):
             await interaction.followup.send(f"❌ No se pudo obtener historia: {e}")
             return
 
-    await send_story_thread(interaction, story)
+    try:
+        await send_story_thread(interaction, story)
+    except Exception as e:
+        logger.error("[bot] send_story_thread failed, re-enqueueing story: %s", e)
+        from src.bbc_noticias.queue import enqueue_story
+        enqueue_story(story)
+        await interaction.followup.send(f"❌ Error al enviar: {e}")
+        return
 
 
 @tree.command(
