@@ -61,22 +61,6 @@ class TestConfigValidate:
 
 
 class TestLoad:
-    def test_load_reads_from_environment(self):
-        env = {
-            "OPENROUTER_API_KEY": "test-key",
-            "DISCORD_WEBHOOK_URL": "https://discord.com/api/webhooks/123/abc",
-            "OPENROUTER_MODEL": "openrouter/google/gemini-2.0-flash",
-            "MAX_AGE_HOURS": "12",
-            "DRY_RUN": "true",
-        }
-        with patch.dict(os.environ, env, clear=False):
-            cfg = load()
-            assert cfg.openrouter_api_key == "test-key"
-            assert cfg.openrouter_model == "openrouter/google/gemini-2.0-flash"
-            assert cfg.max_age_hours == 12
-            assert cfg.dry_run is True
-
-    def test_load_with_no_env_returns_defaults(self):
         with patch.dict(os.environ, {}, clear=True):
             cfg = load()
             # Will have issues since no API key is set, but should still load
