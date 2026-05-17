@@ -29,7 +29,7 @@ class LLM:
         )
         self.model = OPENROUTER_MODEL
 
-    def complete(self, system: str, user: str, temperature: float = 0.7) -> str:
+    def complete(self, system: str, user: str, temperature: float = 0.7, max_tokens: int = 4000) -> str:
         """Send a chat completion and return the text response."""
         response = self.client.chat.completions.create(
             model=self.model,
@@ -38,6 +38,7 @@ class LLM:
                 {"role": "user", "content": user},
             ],
             temperature=temperature,
+            max_tokens=max_tokens,
         )
         content = response.choices[0].message.content
         if not isinstance(content, str):
