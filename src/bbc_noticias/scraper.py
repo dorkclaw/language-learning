@@ -185,3 +185,7 @@ if __name__ == "__main__":
     # Quick smoke test
     url = "https://www.bbc.com/mundo/articles/c4gl71dez8zo"
     text = fetch_article(url)
+    if text:
+        logger.info("[scraper] Smoke test succeeded for %s", url)
+    else:
+        logger.warning("[scraper] Smoke test failed for %s", url)
