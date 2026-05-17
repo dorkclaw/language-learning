@@ -90,6 +90,12 @@ def run() -> bool:
         pub_date=best["pub_date"],
     )
     log.info("  Discord: %s | Telegram: %s", "✅" if result["discord"] else "❌", "✅" if result["telegram"] else "❌")
+
+    # Also enqueue for the Discord bot (shares queue via volume)
+    if result["discord"] or result["telegram"]:
+        from src.bbc_noticias.queue import enqueue_story
+        enqueue_story(best)
+
     return True
 
 
