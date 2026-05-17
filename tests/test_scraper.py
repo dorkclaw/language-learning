@@ -2,7 +2,7 @@
 Unit tests for scraper.py — no API keys needed, tests HTML extraction and cleaning.
 """
 import pytest
-from unittest.mock import patch
+from unittest.mock import patch, MagicMock
 from src.bbc_noticias.scraper import fetch_article, _clean_html, _extract_article_body, _fallback_extract
 
 
@@ -80,8 +80,7 @@ class TestFallbackExtract:
 class TestFetchArticle:
     @patch("src.bbc_noticias.scraper.requests.get")
     def test_fetch_article_success(self, mock_get):
-        mock_get.return_value.__enter__.return_value.status_code = 200
-        mock_get.return_value.__enter__.return_value.text = """
+        html = """
         <html><body>
         <article>
             <p>Este es un artículo de prueba.</p>
@@ -89,6 +88,9 @@ class TestFetchArticle:
         </article>
         </body></html>
         """
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.text = html
+        mock_get.return_value.raise_for_status = MagicMock()
 
         result = fetch_article("https://www.bbc.com/test")
         assert result is not None
@@ -97,7 +99,10 @@ class TestFetchArticle:
 
     @patch("src.bbc_noticias.scraper.requests.get")
     def test_fetch_article_http_error_returns_none(self, mock_get):
-        mock_get.return_value.__enter__.return_value.status_code = 404
+        mock_get.return_value.status_code = 404
+        mock_get.return_value.raise_for_status = MagicMock(
+            side_effect=Exception("not found")
+        )
 
         result = fetch_article("https://www.bbc.com/not-found")
         assert result is None
@@ -112,8 +117,7 @@ class TestFetchArticle:
 
     @patch("src.bbc_noticias.scraper.requests.get")
     def test_fetch_article_with_bbc_article_tag(self, mock_get):
-        mock_get.return_value.__enter__.return_value.status_code = 200
-        mock_get.return_value.__enter__.return_value.text = """
+        html = """
         <html>
         <article data-component="article-body">
             <p>Noticia sobre tecnología y avances científicos.</p>
@@ -121,6 +125,9 @@ class TestFetchArticle:
         </article>
         </html>
         """
+        mock_get.return_value.status_code = 200
+        mock_get.return_value.text = html
+        mock_get.return_value.raise_for_status = MagicMock()
 
         result = fetch_article("https://www.bbc.com/article")
         assert result is not None
