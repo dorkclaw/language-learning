@@ -93,8 +93,11 @@ def run() -> bool:
 
     # Also enqueue for the Discord bot (shares queue via volume)
     if result["discord"] or result["telegram"]:
-        from src.bbc_noticias.queue import enqueue_story
-        enqueue_story(best)
+        try:
+            from src.bbc_noticias.queue import enqueue_story
+            enqueue_story(best)
+        except Exception as e:
+            log.warning("  Queue: ❌ (%s) — notification was already sent, ignoring", e)
 
     return True
 

@@ -68,9 +68,12 @@ def pending_count() -> int:
 
 
 def is_already_queued(url: str) -> bool:
-    """Check if a story URL is already in pending or sent."""
+    """Check if a story URL is already in pending or sent.
+
+    Stories from RSS use 'link' as the URL key.
+    """
     data = _load()
     for s in data["pending"] + data["sent"]:
-        if s.get("url") == url:
+        if s.get("link") == url or s.get("url") == url:
             return True
     return False

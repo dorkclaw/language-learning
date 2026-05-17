@@ -18,9 +18,10 @@ from src.bbc_noticias.config import load as load_config
 from src.bbc_noticias.rss import fetch_stories
 from src.bbc_noticias.scraper import fetch_article
 from src.bbc_noticias.selector import select_best_story
+from src.bbc_noticias.sent_stories import filter_unsent
 from src.bbc_noticias.simplifier import simplify_article
 from src.bbc_noticias.llm import LLM
-from src.bbc_noticias.queue import enqueue_story, pop_story, pending_count
+from src.bbc_noticias.queue import pop_story, pending_count
 
 load_dotenv()
 
@@ -64,11 +65,21 @@ class StoryView(discord.ui.View):
 
 
 async def fetch_and_pick_story(llm: LLM) -> dict:
-    """Fetch RSS stories and let LLM pick the best one."""
-    stories = fetch_stories(max_age_hours=48)
+    """Fetch RSS stories and let LLM pick the best one (runs blocking work in thread pool)."""
+    import asyncio
+
+    def blocking() -> list[dict]:
+        stories = fetch_stories(max_age_hours=48)
+        # Avoid already-sent stories so the button/slash always pick fresh ones
+        return filter_unsent(stories)
+
+    def blocking_with_llm(stories: list[dict]) -> dict:
+        return select_best_story(stories, llm)
+
+    stories = await asyncio.to_thread(blocking)
     if not stories:
         raise RuntimeError("No se encontraron historias en las últimas 48 horas.")
-    return select_best_story(stories, llm)
+    return await asyncio.to_thread(blocking_with_llm, stories)
 
 
 async def send_story_thread(interaction: discord.Interaction, story: dict) -> None:
@@ -96,14 +107,16 @@ async def send_story_thread(interaction: discord.Interaction, story: dict) -> No
         auto_archive_duration=60,
     )
 
-    # Simplify and post full article in the thread
+    # Simplify and post full article in the thread (runs blocking work in thread pool)
     try:
-        article_text = fetch_article(story["link"])
+        article_text = await asyncio.to_thread(fetch_article, story["link"])
         if article_text:
-            simplified = simplify_article(article_text, interaction.client.llm)
+            simplified = await asyncio.to_thread(simplify_article, article_text, interaction.client.llm)
         else:
             simplified = story.get("description", "Sin descripción disponible.")
-        await thread.send(f"📖 **{story['title']}**\n\n{simplified}")
+        # Discord messages are max 2000 chars — split if needed
+        for i in range(0, len(simplified), 1900):
+            await thread.send(f"📖 **{story['title']}**\n\n{simplified[i : i + 1900]}")
     except Exception as e:
         logger.warning("[bot] Failed to simplify story: %s", e)
         await thread.send(f"📖 {story.get('description', 'Sin descripción disponible.')}")
@@ -154,13 +167,33 @@ async def cola(interaction: discord.Interaction):
 @client.event
 async def on_ready() -> None:
     logger.info("[bot] Logged in as %s", client.user)
+
+    # Sync global slash commands
+    synced = await tree.sync()
+    logger.info("[bot] Synced %d global commands", len(synced))
+
     # Register persistent view (for button)
     client.add_view(StoryView())
     logger.info("[bot] Views registered")
 
+    # Send button anchor message so users can click
+    channel_id = os.getenv("BOT_CHANNEL_ID", "").strip()
+    if channel_id:
+        try:
+            channel = await client.fetch_channel(int(channel_id))
+            if isinstance(channel, discord.TextChannel):
+                await channel.send(
+                    "📰 ¡Haz clic en el botón para recibir una historia de BBC Mundo!",
+                    view=StoryView(),
+                )
+                logger.info("[bot] Button anchor sent to channel %s", channel_id)
+        except Exception as e:
+            logger.warning("[bot] Could not send button anchor: %s", e)
+    else:
+        logger.warning("[bot] BOT_CHANNEL_ID not set — no button anchor message sent")
+
     # Init LLM
-    config = load_config()
-    client.llm = LLM(api_key=config.openrouter_api_key, model=config.openrouter_model)
+    client.llm = LLM()
     logger.info("[bot] LLM ready")
 
 

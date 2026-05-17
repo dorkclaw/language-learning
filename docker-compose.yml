@@ -5,6 +5,7 @@ services:
       dockerfile: Dockerfile
     container_name: bbc-cron
     restart: unless-stopped
+    entrypoint: ["/app/entrypoint.sh"]
     env_file:
       - .env
     environment:
