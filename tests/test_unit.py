@@ -320,3 +320,65 @@ def test_pop_story_is_guarded_by_try_except():
         bot_src,
         re.DOTALL,
     ), "send_story_thread should be wrapped in try/except that re-enqueues on failure"
+
+
+# ---------------------------------------------------------------------------
+# Issue 12: filter_unsent called with wrong type in discord_bot.py
+# Bug: passing full story dicts instead of URL strings causes 'dict' object has
+# no attribute 'strip' at runtime. Caught by source-level check.
+# ---------------------------------------------------------------------------
+def test_filter_unsent_rejects_dicts():
+    """filter_unsent must reject list[dict] at call time — dict has no .strip()."""
+    from src.bbc_noticias.sent_stories import filter_unsent
+    import pytest
+
+    # Passing story dicts (what discord_bot.py was accidentally doing)
+    story_dicts = [
+        {"title": "Story 1", "link": "https://bbc.com/1"},
+        {"title": "Story 2", "link": "https://bbc.com/2"},
+    ]
+    with pytest.raises(AttributeError, match="'dict' object has no attribute 'strip'"):
+        filter_unsent(story_dicts)
+
+
+def test_discord_bot_passes_url_list_to_filter_unsent():
+    """discord_bot.py must pass [s["link"] for s in stories] to filter_unsent."""
+    bot_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "discord_bot.py").read_text()
+
+    # Extract fetch_and_pick_story body
+    lines = bot_src.split("\n")
+    in_fn = False
+    fn_lines = []
+    for line in lines:
+        if "def fetch_and_pick_story" in line:
+            in_fn = True
+        if in_fn:
+            fn_lines.append(line)
+            if len(fn_lines) > 1 and line.startswith("def ") and "fetch_and_pick_story" not in line:
+                break
+    fn_body = "\n".join(fn_lines)
+
+    # Must call filter_unsent with a list-comprehension that extracts .link
+    assert 'filter_unsent([s["link"] for s in stories]' in fn_body or (
+        "filter_unsent([" in fn_body and 's["link"]' in fn_body and "for s in stories" in fn_body
+    ), (
+        "filter_unsent must be called with [s['link'] for s in stories], "
+        "not raw stories list"
+    )
+    # Must NOT call filter_unsent with bare stories (without extracting link)
+    assert "filter_unsent(stories)" not in fn_body, (
+        "filter_unsent(stories) passes dicts — use filter_unsent([s['link'] for s in stories])"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Issue 13: filter_unsent must handle None/missing items gracefully
+# ---------------------------------------------------------------------------
+def test_filter_unsent_skips_none_items():
+    """filter_unsent must not crash if list contains None or non-str items."""
+    from src.bbc_noticias.sent_stories import filter_unsent
+    import pytest
+
+    # None in list would crash .strip()
+    with pytest.raises(AttributeError):
+        filter_unsent(["https://bbc.com/1", None, "https://bbc.com/2"])
