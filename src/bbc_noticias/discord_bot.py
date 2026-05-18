@@ -86,15 +86,18 @@ async def fetch_and_pick_story(llm: LLM) -> dict:
         logger.info("[bot] filter_unsent reduced to %d unsent stories", len(stories))
         return stories
 
-    def blocking_with_llm(stories: list[dict]) -> dict:
+    def blocking_with_llm(stories: list[dict]) -> list[dict]:
         selected = select_best_story(stories, llm)
-        logger.info("[bot] LLM selected: %s", selected.get("title", "unknown"))
-        return selected
+        logger.info("[bot] LLM selected: %s", selected.get("title", "unknown") if selected else "none")
+        return [selected] if selected else []
 
     stories = await asyncio.to_thread(blocking)
     if not stories:
         raise RuntimeError("No se encontraron historias en las últimas 48 horas.")
-    return await asyncio.to_thread(blocking_with_llm, stories)
+    selected = await asyncio.to_thread(blocking_with_llm, stories)
+    if not selected:
+        raise RuntimeError("No story could be selected.")
+    return selected[0]
 
 
 async def send_story_thread(interaction: discord.Interaction, story: dict) -> None:
