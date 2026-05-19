@@ -14,7 +14,7 @@ import os
 import sys
 from datetime import datetime, timezone
 
-from .story_service import fetch_and_pick_story, simplify_story, get_story_payload
+from .story_service import get_story_payload
 from .adapters.base import StoryPayload
 
 
@@ -139,18 +139,19 @@ if __name__ == "__main__":
 
 def send_article(title: str, original_url: str, simplified_text: str, pub_date: str) -> dict:
     """
-    Sync wrapper for backward compatibility with bot.py.
-    Posts via webhook to Discord only (Telegram is async-only).
-    Returns {"discord": bool, "telegram": bool}.
+    Sync wrapper for sending via Discord webhook.
+    Uses _build_story_text to format the message properly.
+    Returns {"discord": bool, "telegram": None}.
     """
     logger.info("[send_article] Posting: %s", title)
-    result = {"discord": False, "telegram": False}
+    result = {"discord": False, "telegram": None}
 
     webhook_url = os.getenv("DISCORD_WEBHOOK_URL", "")
     if webhook_url:
         try:
             import httpx  # lazy
-            payload = {"content": f"**{title}**\n{simplified_text[:1800]}\n\n🔗 {original_url}"}
+            # simplified_text is already a formatted string from _build_story_text
+            payload = {"content": simplified_text[:2000]}
             resp = httpx.post(webhook_url, json=payload, timeout=10.0)
             resp.raise_for_status()
             result["discord"] = True

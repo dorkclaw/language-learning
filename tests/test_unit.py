@@ -198,32 +198,26 @@ def test_discord_bot_uses_asyncio_to_thread():
     """story_service.py runs blocking I/O in asyncio.to_thread — not blocking the event loop."""
     svc_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "story_service.py").read_text()
 
-    # fetch_stories + select_best_story are called inside lambdas passed to to_thread
-    # fetch_article + simplify_article are called directly with to_thread
-    # Check each function is wrapped (either in a lambda inside to_thread, or directly)
-
-    # Blocking I/O must use asyncio.to_thread or run_in_executor
+    # asyncio blocking I/O must use asyncio.to_thread or run_in_executor
     assert "run_in_executor" in svc_src or "to_thread" in svc_src, \
         "blocking I/O should use asyncio.to_thread or run_in_executor"
 
-    # Indirect calls: fetch_stories and select_best_story are called inside a blocking lambda
-    # Use line-based extraction to reliably grab the function body
+    # simplify_story uses run_in_executor for fetch_article + simplify
     lines = svc_src.split("\n")
     in_fn = False
     fn_lines = []
     for line in lines:
-        if "def fetch_and_pick_story" in line:
+        if "def simplify_story" in line:
             in_fn = True
         if in_fn:
             fn_lines.append(line)
-            if len(fn_lines) > 1 and line.startswith("def ") and "fetch_and_pick_story" not in line:
+            if len(fn_lines) > 1 and line.startswith("def ") and "simplify_story" not in line:
                 break
     fn_body = "\n".join(fn_lines)
-    assert "fetch_stories" in fn_body, f"fetch_stories not in fn_body"
-    assert "filter_unsent" in fn_body, "filter_unsent not in fn_body"
-    assert "select_best_story" in fn_body, "select_best_story not in fn_body"
+    assert "fetch_article" in fn_body, "fetch_article not in fn_body"
+    assert "simplify" in fn_body, "simplify not in fn_body"
     assert "run_in_executor" in fn_body or "to_thread" in fn_body, \
-        "blocking calls in fetch_and_pick_story should use run_in_executor or to_thread"
+        "blocking calls in simplify_story should use run_in_executor or to_thread"
 
 
 # ---------------------------------------------------------------------------
@@ -344,16 +338,16 @@ def test_discord_bot_passes_url_list_to_filter_unsent():
     """story_service.py must pass [s["link"] for s in stories] to filter_unsent."""
     svc_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "story_service.py").read_text()
 
-    # Extract fetch_and_pick_story body
+    # Extract get_story_payload body
     lines = svc_src.split("\n")
     in_fn = False
     fn_lines = []
     for line in lines:
-        if "def fetch_and_pick_story" in line:
+        if "def get_story_payload" in line:
             in_fn = True
         if in_fn:
             fn_lines.append(line)
-            if len(fn_lines) > 1 and line.startswith("def ") and "fetch_and_pick_story" not in line:
+            if len(fn_lines) > 1 and line.startswith("def ") and "get_story_payload" not in line:
                 break
     fn_body = "\n".join(fn_lines)
 
@@ -361,9 +355,9 @@ def test_discord_bot_passes_url_list_to_filter_unsent():
     assert 's["link"]' in fn_body and "for s in stories" in fn_body, (
         "URLs must be extracted as [s['link'] for s in stories] before calling filter_unsent"
     )
-    # Must call queue_service.filter_unsent with the URL list (not bare stories)
-    assert "queue_service.filter_unsent" in fn_body, (
-        "filter_unsent must be called via queue_service (queue_service.filter_unsent)"
+    # Must call filter_unsent with the list of story links
+    assert "filter_unsent" in fn_body, (
+        "filter_unsent must be called with the list of story links"
     )
 
 

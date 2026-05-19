@@ -100,14 +100,17 @@ sys.modules["openai"] = mock_openai
 
 
 def test_simplifier_exports_exist():
-    """Verify every function that discord_bot.py imports from simplifier actually exists."""
+    """Verify every function that other modules import from simplifier actually exists."""
     from src.bbc_noticias import simplifier
 
-    # These are the functions discord_bot.py imports from simplifier
-    expected = {"simplify_article"}
-    actual = set(dir(simplifier))
-    missing = expected - actual
-    assert not missing, f"simplifier.py is missing exports that other modules import: {missing}"
+    # simplifier.simplify is the function used by story_service.py and bot.py
+    # It takes article_dict (with title/text/url) and returns a dict with summary/bullets/text
+    assert hasattr(simplifier, "simplify"), "simplifier must export 'simplify'"
+    import inspect
+    sig = inspect.signature(simplifier.simplify)
+    params = list(sig.parameters.keys())
+    # Must accept (article_dict, llm) and return dict
+    assert params == ["article_dict", "llm"], f"simplify signature should be (article_dict, llm), got {params}"
 
 
 # ---------------------------------------------------------------------------
@@ -233,6 +236,71 @@ def test_queue_is_already_queued(tmp_path):
 
     finally:
         queue_mod.QUEUE_PATH = original_path
+
+
+# ---------------------------------------------------------------------------
+# Bug 2: SIMPLIFY_PROMPT must request JSON output with summary/bullets/text keys
+# ---------------------------------------------------------------------------
+
+
+def test_simplify_prompt_requests_json():
+    """SIMPLIFY_PROMPT must request JSON output with summary/bullets/text keys.
+
+    Without this, the LLM returns plain Spanish text and story_service.py
+    crashes with TypeError on simplified["summary"].
+    """
+    from src.bbc_noticias.prompts import SIMPLIFY_PROMPT
+
+    assert '"summary"' in SIMPLIFY_PROMPT, "prompt should request 'summary' field"
+    assert '"bullets"' in SIMPLIFY_PROMPT, "prompt should request 'bullets' field"
+    assert '"text"' in SIMPLIFY_PROMPT, "prompt should request 'text' field"
+
+
+# ---------------------------------------------------------------------------
+# Bug 4: bot.py must use _build_story_text, not raw string slicing
+# ---------------------------------------------------------------------------
+
+
+def test_bot_uses_build_story_text():
+    """bot.py must pass StoryPayload through _build_story_text(), not raw text slicing.
+
+    Without this, Discord messages use a bare string instead of properly
+    formatted story text with headline + summary + bullets + topic.
+    """
+    bot_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "bot.py").read_text()
+    notifier_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "notifier.py").read_text()
+
+    # bot.py should use StoryPayload and _build_story_text
+    assert "StoryPayload" in bot_src, "bot.py should construct StoryPayload"
+    assert "_build_story_text" in bot_src, "bot.py should call _build_story_text to format messages"
+
+    # send_article should use simplified_text directly (it's already formatted)
+    # NOT construct its own payload with title + simplified_text[:1800]
+    assert "simplified_text[:1800]" not in notifier_src, (
+        "send_article must not truncate simplified_text at 1800 — "
+        "_build_story_text already formats it correctly"
+    )
+
+
+# ---------------------------------------------------------------------------
+# Bug 5: config.py and .env.example must agree on env var names
+# ---------------------------------------------------------------------------
+
+
+def test_env_var_consistency():
+    """config.py must read the same env vars that .env.example defines."""
+    import re
+
+    cfg_src = (Path(__file__).parent.parent / "src" / "bbc_noticias" / "config.py").read_text()
+    env_src = (Path(__file__).parent.parent / ".env.example").read_text()
+
+    # .env.example should define TELEGRAM_BOT_TOKEN (not just BOT_TOKEN)
+    assert "TELEGRAM_BOT_TOKEN" in env_src, ".env.example should define TELEGRAM_BOT_TOKEN"
+
+    # config.py must read TELEGRAM_BOT_TOKEN (not a different name)
+    assert "TELEGRAM_BOT_TOKEN" in cfg_src, (
+        "config.py reads 'TELEGRAM_BOT_TOKEN' but .env.example may define a different name"
+    )
 
 
 # ---------------------------------------------------------------------------
